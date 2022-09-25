@@ -6,6 +6,6 @@
         InvalidCredentials,
         Timeout,
         InvalidScopes,
-        Unknown,
+        Unknown
     }
 }

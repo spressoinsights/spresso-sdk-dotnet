@@ -4,12 +4,9 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using HttpClientFactoryLite;
 using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using IHttpClientFactory = HttpClientFactoryLite.IHttpClientFactory;
+using Spresso.Sdk.Core.Connectivity;
 
 namespace Spresso.Sdk.Core.Auth
 {
@@ -18,13 +15,13 @@ namespace Spresso.Sdk.Core.Auth
         private const string DefaultSpressoBaseAuthUrl = "https://auth.spresso.com";
         private const string DefaultSpressoAudience = "https://spresso-api";
         private readonly IDistributedCache _cache;
+        private readonly SpressoHttpClientFactory _httpClientFactory;
+        private readonly string _spressoBaseAuthUrl;
         private readonly string _tokenCacheKey;
         private readonly string _tokenRequest;
-        private readonly string _spressoBaseAuthUrl;
-        private readonly IHttpClientFactory _httpClientFactory;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="TokenHandler"/> class.
+        ///     Initializes a new instance of the <see cref="TokenHandler" /> class.
         /// </summary>
         /// <param name="clientId">The client key provided for your application(s)</param>
         /// <param name="clientSecret">The client secret provided for your application(s)</param>
@@ -32,7 +29,7 @@ namespace Spresso.Sdk.Core.Auth
         public TokenHandler(string clientId, string clientSecret, TokenHandlerOptions? options = null)
         {
             options ??= new TokenHandlerOptions();
-            _httpClientFactory = new HttpClientFactory();
+            _httpClientFactory = options.SpressoHttpClientFactory;
             _tokenCacheKey = $"Spresso.Auth.AuthKey.{options.TokenGroup}";
             _spressoBaseAuthUrl = Environment.GetEnvironmentVariable("SPRESSO_BASE_AUTH_URL") ?? DefaultSpressoBaseAuthUrl;
             var spressoAudience = Environment.GetEnvironmentVariable("SPRESSO_AUDIENCE") ?? DefaultSpressoAudience;
@@ -61,7 +58,7 @@ namespace Spresso.Sdk.Core.Auth
                 return CreateTokenResponse(auth0TokenResponseJson);
             }
 
-            var httpClient = _httpClientFactory.CreateClient("spresso");
+            var httpClient = _httpClientFactory.GetClient();
             httpClient.BaseAddress = new Uri(_spressoBaseAuthUrl);
             httpClient.Timeout = new TimeSpan(0, 0, 30); // todo: timeout should be configurable
             try
