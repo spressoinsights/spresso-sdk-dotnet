@@ -3,7 +3,7 @@
     "Spresso.Sdk.ConsoleSample": {
       "commandName": "Project",
       "environmentVariables": {
-        "SPRESSO_BASE_AUTH_URL": "https://dev-369tg5rm.us.auth0.com"
+        "SPRESSO_BASE_AUTH_URL": "https://localhost:7176/"
       }
     }
   }

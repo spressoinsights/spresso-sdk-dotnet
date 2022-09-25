@@ -3,13 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spresso.Sdk.Core", "src\Spresso.Sdk.Core\Spresso.Sdk.Core.csproj", "{A3F2CCED-04A5-4731-BBEF-A8B845BFF621}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Spresso.Sdk.Core", "src\Spresso.Sdk.Core\Spresso.Sdk.Core.csproj", "{A3F2CCED-04A5-4731-BBEF-A8B845BFF621}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spresso.Sdk.ConsoleSample", "samples\Spresso.Sdk.ConsoleSample\Spresso.Sdk.ConsoleSample.csproj", "{4615E5BC-2787-4A26-B294-2819120D3F48}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Spresso.Sdk.ConsoleSample", "samples\Spresso.Sdk.ConsoleSample\Spresso.Sdk.ConsoleSample.csproj", "{4615E5BC-2787-4A26-B294-2819120D3F48}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spresso.Sdk.PriceOptimizations", "src\Spresso.Sdk.PriceOptimizations\Spresso.Sdk.PriceOptimizations.csproj", "{A516CF11-985F-4A63-A837-5C1C9C83B2EA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Spresso.Sdk.PriceOptimizations", "src\Spresso.Sdk.PriceOptimizations\Spresso.Sdk.PriceOptimizations.csproj", "{A516CF11-985F-4A63-A837-5C1C9C83B2EA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{628A0F67-1865-4A3B-8AEB-7E3C6342048A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spresso.MockApi", "tests\Spresso.MockApi\Spresso.MockApi.csproj", "{4FD02412-C6D2-4995-8E3C-57B1D7EB9A0A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,6 +31,10 @@ Global
 		{A516CF11-985F-4A63-A837-5C1C9C83B2EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A516CF11-985F-4A63-A837-5C1C9C83B2EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A516CF11-985F-4A63-A837-5C1C9C83B2EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4FD02412-C6D2-4995-8E3C-57B1D7EB9A0A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4FD02412-C6D2-4995-8E3C-57B1D7EB9A0A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4FD02412-C6D2-4995-8E3C-57B1D7EB9A0A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4FD02412-C6D2-4995-8E3C-57B1D7EB9A0A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

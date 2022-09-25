@@ -29,5 +29,10 @@ namespace Spresso.Sdk.Core.Auth
         ///     Http Client Factory to create http clients
         /// </summary>
         public SpressoHttpClientFactory SpressoHttpClientFactory { get; set; } = SpressoHttpClientFactory.Default;
+
+        /// <summary>
+        /// Additional parameters to be sent to the token endpoint for debug/testing purposes
+        /// </summary>
+        public string AdditionalParameters { get; set; } = string.Empty;
     }
 }
