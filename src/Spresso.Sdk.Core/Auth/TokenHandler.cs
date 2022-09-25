@@ -28,13 +28,12 @@ namespace Spresso.Sdk.Core.Auth
         /// </summary>
         /// <param name="clientId">The client key provided for your application(s)</param>
         /// <param name="clientSecret">The client secret provided for your application(s)</param>
-        /// <param name="cache">The caching strategy for token storage.  Default is in-memory</param>
-        /// <param name="tokenGroup">Only relevant in distributed caching scenarios.  Set this value if you have multiple applications using a shared distributed cache if they have different keys/secrets or if they have different scopes</param>
-        /// <param name="scopes">You may set a subset of scopes issued to your client to reduce the security footprint.  Default is all scopes issued for your client</param>
-        public TokenHandler(string clientId, string clientSecret, IDistributedCache? cache = null, string tokenGroup = "default", string[]? scopes = null)
+        /// <param name="options">Token handler configuration</param>
+        public TokenHandler(string clientId, string clientSecret, TokenHandlerOptions? options = null)
         {
+            options ??= new TokenHandlerOptions();
             _httpClientFactory = new HttpClientFactory();
-            _tokenCacheKey = $"Spresso.Auth.AuthKey.{tokenGroup}";
+            _tokenCacheKey = $"Spresso.Auth.AuthKey.{options.TokenGroup}";
             _spressoBaseAuthUrl = Environment.GetEnvironmentVariable("SPRESSO_BASE_AUTH_URL") ?? DefaultSpressoBaseAuthUrl;
             var spressoAudience = Environment.GetEnvironmentVariable("SPRESSO_AUDIENCE") ?? DefaultSpressoAudience;
             var tokenRequestBuilder = new Dictionary<string, string>
@@ -45,12 +44,12 @@ namespace Spresso.Sdk.Core.Auth
                 ["grant_type"] = "client_credentials"
             };
 
-            if (scopes != null)
+            if (options.Scopes != null && options.Scopes.Length > 0)
             {
-                tokenRequestBuilder.Add("scope", string.Join(" ", scopes));
+                tokenRequestBuilder.Add("scope", string.Join(" ", options.Scopes));
             }
 
-            _cache = cache ?? new MemoryDistributedCache(new OptionsWrapper<MemoryDistributedCacheOptions>(new MemoryDistributedCacheOptions()));
+            _cache = options.Cache!;
             _tokenRequest = JsonConvert.SerializeObject(tokenRequestBuilder);
         }
 
