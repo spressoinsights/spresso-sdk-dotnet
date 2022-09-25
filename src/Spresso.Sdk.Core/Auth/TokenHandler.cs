@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json;
@@ -50,9 +51,9 @@ namespace Spresso.Sdk.Core.Auth
             _tokenRequest = JsonConvert.SerializeObject(tokenRequestBuilder);
         }
 
-        public async Task<TokenResponse> GetTokenAsync()
+        public async Task<TokenResponse> GetTokenAsync(CancellationToken cancellationToken = default)
         {
-            var auth0TokenResponseJson = await _cache.GetStringAsync(_tokenCacheKey);
+            var auth0TokenResponseJson = await _cache.GetStringAsync(_tokenCacheKey, cancellationToken);
             if (!string.IsNullOrEmpty(auth0TokenResponseJson))
             {
                 return CreateTokenResponse(auth0TokenResponseJson);
@@ -63,7 +64,7 @@ namespace Spresso.Sdk.Core.Auth
             httpClient.Timeout = new TimeSpan(0, 0, 30); // todo: timeout should be configurable
             try
             {
-                var response = await httpClient.PostAsync("/oauth/token", new StringContent(_tokenRequest, Encoding.UTF8, "application/json"));
+                var response = await httpClient.PostAsync("/oauth/token", new StringContent(_tokenRequest, Encoding.UTF8, "application/json"), cancellationToken);
                 if (response.IsSuccessStatusCode)
                 {
                     auth0TokenResponseJson = await response.Content.ReadAsStringAsync();
@@ -71,7 +72,7 @@ namespace Spresso.Sdk.Core.Auth
                     await _cache.SetStringAsync(_tokenCacheKey, auth0TokenResponseJson, new DistributedCacheEntryOptions
                     {
                         AbsoluteExpiration = tokenResponse.ExpiresAt.Value.Subtract(new TimeSpan(0, 5, 0))
-                    });
+                    }, token: cancellationToken);
                     return tokenResponse;
                 }
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
