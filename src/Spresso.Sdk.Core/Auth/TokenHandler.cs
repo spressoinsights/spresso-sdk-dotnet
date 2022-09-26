@@ -15,13 +15,13 @@ namespace Spresso.Sdk.Core.Auth
     {
         private const string DefaultSpressoBaseAuthUrl = "https://auth.spresso.com";
         private const string DefaultSpressoAudience = "https://spresso-api";
+        private readonly string _additionalParameters;
         private readonly IDistributedCache _cache;
         private readonly SpressoHttpClientFactory _httpClientFactory;
         private readonly string _spressoBaseAuthUrl;
         private readonly string _tokenCacheKey;
-        private readonly string _tokenRequest;
         private readonly string _tokenEndpoint;
-        private readonly string _additionalParameters;
+        private readonly string _tokenRequest;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="TokenHandler" /> class.
@@ -37,7 +37,7 @@ namespace Spresso.Sdk.Core.Auth
             _spressoBaseAuthUrl = Environment.GetEnvironmentVariable("SPRESSO_BASE_AUTH_URL") ?? DefaultSpressoBaseAuthUrl;
             _additionalParameters = options.AdditionalParameters;
             _tokenEndpoint = "oauth/token";
-            if (!String.IsNullOrEmpty(_additionalParameters))
+            if (!string.IsNullOrEmpty(_additionalParameters))
             {
                 _tokenEndpoint += "?" + _additionalParameters;
             }
@@ -72,7 +72,8 @@ namespace Spresso.Sdk.Core.Auth
             httpClient.Timeout = new TimeSpan(0, 0, 30); // todo: timeout should be configurable
             try
             {
-                var response = await httpClient.PostAsync(_tokenEndpoint, new StringContent(_tokenRequest, Encoding.UTF8, "application/json"), cancellationToken);
+                var response = await httpClient.PostAsync(_tokenEndpoint, new StringContent(_tokenRequest, Encoding.UTF8, "application/json"),
+                    cancellationToken);
                 if (response.IsSuccessStatusCode)
                 {
                     auth0TokenResponseJson = await response.Content.ReadAsStringAsync();
@@ -80,7 +81,7 @@ namespace Spresso.Sdk.Core.Auth
                     await _cache.SetStringAsync(_tokenCacheKey, auth0TokenResponseJson, new DistributedCacheEntryOptions
                     {
                         AbsoluteExpiration = tokenResponse.ExpiresAt.Value.Subtract(new TimeSpan(0, 5, 0))
-                    }, token: cancellationToken);
+                    }, cancellationToken);
                     return tokenResponse;
                 }
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
@@ -109,7 +110,6 @@ namespace Spresso.Sdk.Core.Auth
             {
                 return new TokenResponse(AuthError.Unknown);
             }
-       
         }
 
         private TokenResponse CreateTokenResponse(string auth0TokenResponseJson)

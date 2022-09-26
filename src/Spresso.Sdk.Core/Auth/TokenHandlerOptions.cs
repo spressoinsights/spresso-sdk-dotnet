@@ -31,7 +31,7 @@ namespace Spresso.Sdk.Core.Auth
         public SpressoHttpClientFactory SpressoHttpClientFactory { get; set; } = SpressoHttpClientFactory.Default;
 
         /// <summary>
-        /// Additional parameters to be sent to the token endpoint for debug/testing purposes
+        ///     Additional parameters to be sent to the token endpoint for debug/testing purposes
         /// </summary>
         public string AdditionalParameters { get; set; } = string.Empty;
     }

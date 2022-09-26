@@ -2,14 +2,12 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using JsonClaimValueTypes = Microsoft.IdentityModel.JsonWebTokens.JsonClaimValueTypes;
 
-namespace Spresso.MockApi.Controllers
-{
+namespace Spresso.MockApi.Controllers ;
+
     [ApiController]
     [Route("oauth")]
     public class AuthController : ControllerBase
@@ -26,13 +24,13 @@ namespace Spresso.MockApi.Controllers
         {
             if (Request.Query.ContainsKey("delay"))
             {
-                int delay = int.Parse(Request.Query["delay"]);
+                var delay = int.Parse(Request.Query["delay"]);
                 await Task.Delay(new TimeSpan(0, 0, 0, delay));
             }
 
-            var serviceList = new string[] { "tms", "pim", "price-optimization" };
+            var serviceList = new[] { "tms", "pim", "price-optimization" };
             var claims = new List<Claim>();
-            if (String.IsNullOrEmpty(request.scope))
+            if (string.IsNullOrEmpty(request.scope))
             {
                 claims.Add(new Claim("scope", "view edit"));
             }
@@ -43,17 +41,20 @@ namespace Spresso.MockApi.Controllers
             claims.Add(new Claim("https://api.spresso.com/orgId", "org_FakeOrg"));
             claims.Add(new Claim("https://api.spresso.com/services", JsonSerializer.Serialize(serviceList), JsonClaimValueTypes.JsonArray));
             claims.Add(new Claim("gty", "client-credentials"));
-            claims.Add(new Claim("permissions", JsonSerializer.Serialize(claims.Single(c=>c.Type == "scope").Value.Split(' ')), JsonClaimValueTypes.JsonArray));
+            claims.Add(new Claim("permissions", JsonSerializer.Serialize(claims.Single(c => c.Type == "scope").Value.Split(' ')), JsonClaimValueTypes.JsonArray));
             claims.Add(new Claim("azp", request.client_id));
             claims.Add(new Claim("sub", request.client_id + "@clients"));
-         
+
 
             var jwtPayload = new JwtPayload("https://mock-auth.spresso.com", "https://mock-spresso-api", claims, DateTime.UtcNow,
                 DateTime.UtcNow.AddDays(1));
-       
-            var jwt = new JwtSecurityToken(new JwtHeader(new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes("NcQfTjWnZr4u7x!A")), SecurityAlgorithms.HmacSha256)), jwtPayload);
 
-            JwtSecurityTokenHandler jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
+            var jwt =
+                new JwtSecurityToken(
+                    new JwtHeader(new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes("NcQfTjWnZr4u7x!A")), SecurityAlgorithms.HmacSha256)),
+                    jwtPayload);
+
+            var jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
             var accessToken = jwtSecurityTokenHandler.WriteToken(jwt);
             return Ok(new Auth0TokenResponse
             {
@@ -62,7 +63,6 @@ namespace Spresso.MockApi.Controllers
                 expires_in = 86400,
                 token_type = "Bearer"
             });
-
         }
     }
 
@@ -82,4 +82,3 @@ namespace Spresso.MockApi.Controllers
         public string grant_type { get; set; }
         public string scope { get; set; } = string.Empty;
     }
-}
