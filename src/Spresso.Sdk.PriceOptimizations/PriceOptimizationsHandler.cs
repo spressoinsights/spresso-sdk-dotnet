@@ -27,6 +27,7 @@ namespace Spresso.Sdk.PriceOptimizations
         }
 
         //todo: should api include a ttl?
+        //todo: paging
         //discuss ephemeral ports https://blog.cloudflare.com/how-to-stop-running-out-of-ephemeral-ports-and-start-to-love-long-lived-connections/
 
         //todo: logging

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -7,6 +8,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json;
+using Polly;
+using Polly.Timeout;
+using Polly.Wrap;
 using Spresso.Sdk.Core.Connectivity;
 
 namespace Spresso.Sdk.Core.Auth
@@ -22,6 +26,7 @@ namespace Spresso.Sdk.Core.Auth
         private readonly string _tokenCacheKey;
         private readonly string _tokenEndpoint;
         private readonly string _tokenRequest;
+        private readonly AsyncPolicyWrap<TokenResponse> _tokenPolicy;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="TokenHandler" /> class.
@@ -57,6 +62,34 @@ namespace Spresso.Sdk.Core.Auth
 
             _cache = options.Cache!;
             _tokenRequest = JsonConvert.SerializeObject(tokenRequestBuilder);
+
+            var retryErrors = new[] { AuthError.Timeout, AuthError.Unknown };
+            var retryPolicy = Policy.HandleResult<TokenResponse>(t=>!t.IsSuccess && retryErrors.Contains(t.Error)).RetryAsync(3);
+            var timeoutPolicy = Policy.TimeoutAsync<TokenResponse>(TimeSpan.FromSeconds(1)); // todo: make configurable
+
+
+            var circuitBreakerPolicy = Policy.HandleResult<TokenResponse>(t => !t.IsSuccess)
+                .Or<TimeoutRejectedException>()
+                .CircuitBreakerAsync(2, TimeSpan.FromSeconds(600), (state, ts, ctx) =>
+                {
+
+                }, ctx =>
+                {
+
+                }, () =>
+                {
+
+                });
+
+            var fallbackPolicy = Policy.HandleResult<TokenResponse>(t=>!t.IsSuccess).FallbackAsync(
+                new TokenResponse(AuthError.Unknown), (result, ctx) =>
+                {
+                    return Task.FromResult(new TokenResponse(AuthError.Unknown));
+                });
+
+            _tokenPolicy = fallbackPolicy.WrapAsync(circuitBreakerPolicy.WrapAsync(timeoutPolicy.WrapAsync(retryPolicy)));
+
+
         }
 
         public async Task<TokenResponse> GetTokenAsync(CancellationToken cancellationToken = default)
@@ -69,47 +102,59 @@ namespace Spresso.Sdk.Core.Auth
 
             var httpClient = _httpClientFactory.GetClient();
             httpClient.BaseAddress = new Uri(_spressoBaseAuthUrl);
-            httpClient.Timeout = new TimeSpan(0, 0, 30); // todo: timeout should be configurable
+            httpClient.Timeout = new TimeSpan(0, 0, 10); // todo: timeout should be configurable
+
             try
             {
-                var response = await httpClient.PostAsync(_tokenEndpoint, new StringContent(_tokenRequest, Encoding.UTF8, "application/json"),
-                    cancellationToken);
-                if (response.IsSuccessStatusCode)
+                return await _tokenPolicy.ExecuteAsync(async () =>
                 {
-                    auth0TokenResponseJson = await response.Content.ReadAsStringAsync();
-                    var tokenResponse = CreateTokenResponse(auth0TokenResponseJson);
-                    await _cache.SetStringAsync(_tokenCacheKey, auth0TokenResponseJson, new DistributedCacheEntryOptions
+                    try
                     {
-                        AbsoluteExpiration = tokenResponse.ExpiresAt.Value.Subtract(new TimeSpan(0, 5, 0))
-                    }, cancellationToken);
-                    return tokenResponse;
-                }
-                if (response.StatusCode == HttpStatusCode.Unauthorized)
-                {
-                    return new TokenResponse(AuthError.InvalidCredentials);
-                }
-                if (response.StatusCode == HttpStatusCode.Forbidden)
-                {
-                    return new TokenResponse(AuthError.InvalidScopes);
-                }
-                return new TokenResponse(AuthError.Unknown);
+                        var response = await httpClient.PostAsync(_tokenEndpoint, new StringContent(_tokenRequest, Encoding.UTF8, "application/json"),
+                            cancellationToken);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            auth0TokenResponseJson = await response.Content.ReadAsStringAsync();
+                            var tokenResponse = CreateTokenResponse(auth0TokenResponseJson);
+                            await _cache.SetStringAsync(_tokenCacheKey, auth0TokenResponseJson, new DistributedCacheEntryOptions
+                            {
+                                AbsoluteExpiration = tokenResponse.ExpiresAt.Value.Subtract(new TimeSpan(0, 5, 0))
+                            }, cancellationToken);
+                            return tokenResponse;
+                        }
+                        if (response.StatusCode == HttpStatusCode.Unauthorized)
+                        {
+                            return new TokenResponse(AuthError.InvalidCredentials);
+                        }
+                        if (response.StatusCode == HttpStatusCode.Forbidden)
+                        {
+                            return new TokenResponse(AuthError.InvalidScopes);
+                        }
+                        return new TokenResponse(AuthError.Unknown);
+                    }
+                    catch (HttpRequestException e) when (e.Message.Contains("timed out"))
+                    {
+                        return new TokenResponse(AuthError.Timeout);
+                    }
+                    catch (OperationCanceledException e)
+                    {
+                        return new TokenResponse(AuthError.Timeout);
+                    }
+                    catch (HttpRequestException e) when (e.Message.Contains("401"))
+                    {
+                        return new TokenResponse(AuthError.InvalidCredentials);
+                    }
+                    catch (Exception e)
+                    {
+                        return new TokenResponse(AuthError.Unknown);
+                    }
+                });
             }
-            catch (HttpRequestException e) when (e.Message.Contains("timed out"))
+            catch (TimeoutRejectedException e)
             {
                 return new TokenResponse(AuthError.Timeout);
             }
-            catch (OperationCanceledException e)
-            {
-                return new TokenResponse(AuthError.Timeout);
-            }
-            catch (HttpRequestException e) when (e.Message.Contains("401"))
-            {
-                return new TokenResponse(AuthError.InvalidCredentials);
-            }
-            catch (Exception e)
-            {
-                return new TokenResponse(AuthError.Unknown);
-            }
+                
         }
 
         private TokenResponse CreateTokenResponse(string auth0TokenResponseJson)

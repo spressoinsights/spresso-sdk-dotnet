@@ -20,12 +20,16 @@ namespace Spresso.MockApi.Controllers ;
         }
 
         [HttpPost("token", Name = "token")]
-        public async Task<IActionResult> GetToken([FromBody] Auth0TokenRequest request)
+        public async Task<IActionResult> GetToken([FromBody] Auth0TokenRequest request, CancellationToken cancellationToken)
         {
+            if (Request.Query.ContainsKey("status"))
+            {
+                return StatusCode(int.Parse(Request.Query["status"]));
+            }
             if (Request.Query.ContainsKey("delay"))
             {
                 var delay = int.Parse(Request.Query["delay"]);
-                await Task.Delay(new TimeSpan(0, 0, 0, delay));
+                await Task.Delay(new TimeSpan(0, 0, 0, delay), cancellationToken);
             }
 
             var serviceList = new[] { "tms", "pim", "price-optimization" };
