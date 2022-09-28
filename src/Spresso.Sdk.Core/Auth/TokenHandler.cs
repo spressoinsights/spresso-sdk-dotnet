@@ -70,24 +70,25 @@ namespace Spresso.Sdk.Core.Auth
 
             var circuitBreakerPolicy = Policy.HandleResult<TokenResponse>(t => !t.IsSuccess)
                 .Or<TimeoutRejectedException>()
-                .CircuitBreakerAsync(2, TimeSpan.FromSeconds(600), (state, ts, ctx) =>
+                .CircuitBreakerAsync(10, TimeSpan.FromSeconds(60), (state, ts, ctx) =>
                 {
-
+                    // todo: log
                 }, ctx =>
                 {
-
-                }, () =>
-                {
-
+                    //todo: log
                 });
 
-            var fallbackPolicy = Policy.HandleResult<TokenResponse>(t=>!t.IsSuccess).FallbackAsync(
-                new TokenResponse(AuthError.Unknown), (result, ctx) =>
-                {
+            var fallbackPolicy = Policy.Handle<Exception>().OrResult<TokenResponse>(r => !r.IsSuccess).FallbackAsync((tokenResponse, ctx, cancellationToken) =>
+            {
+                // todo: log
+                if(tokenResponse.Exception != null)
                     return Task.FromResult(new TokenResponse(AuthError.Unknown));
-                });
+                return Task.FromResult(tokenResponse.Result);
+            }, (result, context) => Task.CompletedTask);
 
-            _tokenPolicy = fallbackPolicy.WrapAsync(circuitBreakerPolicy.WrapAsync(timeoutPolicy.WrapAsync(retryPolicy)));
+
+
+            _tokenPolicy = Policy.WrapAsync(fallbackPolicy, circuitBreakerPolicy, timeoutPolicy, retryPolicy);
 
 
         }
@@ -104,56 +105,51 @@ namespace Spresso.Sdk.Core.Auth
             httpClient.BaseAddress = new Uri(_spressoBaseAuthUrl);
             httpClient.Timeout = new TimeSpan(0, 0, 10); // todo: timeout should be configurable
 
-            try
+            
+            return await _tokenPolicy.ExecuteAsync(async () =>
             {
-                return await _tokenPolicy.ExecuteAsync(async () =>
+                try
                 {
-                    try
+                    var response = await httpClient.PostAsync(_tokenEndpoint, new StringContent(_tokenRequest, Encoding.UTF8, "application/json"),
+                        cancellationToken);
+                    if (response.IsSuccessStatusCode)
                     {
-                        var response = await httpClient.PostAsync(_tokenEndpoint, new StringContent(_tokenRequest, Encoding.UTF8, "application/json"),
-                            cancellationToken);
-                        if (response.IsSuccessStatusCode)
+                        auth0TokenResponseJson = await response.Content.ReadAsStringAsync();
+                        var tokenResponse = CreateTokenResponse(auth0TokenResponseJson);
+                        await _cache.SetStringAsync(_tokenCacheKey, auth0TokenResponseJson, new DistributedCacheEntryOptions
                         {
-                            auth0TokenResponseJson = await response.Content.ReadAsStringAsync();
-                            var tokenResponse = CreateTokenResponse(auth0TokenResponseJson);
-                            await _cache.SetStringAsync(_tokenCacheKey, auth0TokenResponseJson, new DistributedCacheEntryOptions
-                            {
-                                AbsoluteExpiration = tokenResponse.ExpiresAt.Value.Subtract(new TimeSpan(0, 5, 0))
-                            }, cancellationToken);
-                            return tokenResponse;
-                        }
-                        if (response.StatusCode == HttpStatusCode.Unauthorized)
-                        {
-                            return new TokenResponse(AuthError.InvalidCredentials);
-                        }
-                        if (response.StatusCode == HttpStatusCode.Forbidden)
-                        {
-                            return new TokenResponse(AuthError.InvalidScopes);
-                        }
-                        return new TokenResponse(AuthError.Unknown);
+                            AbsoluteExpiration = tokenResponse.ExpiresAt.Value.Subtract(new TimeSpan(0, 5, 0))
+                        }, cancellationToken);
+                        return tokenResponse;
                     }
-                    catch (HttpRequestException e) when (e.Message.Contains("timed out"))
-                    {
-                        return new TokenResponse(AuthError.Timeout);
-                    }
-                    catch (OperationCanceledException e)
-                    {
-                        return new TokenResponse(AuthError.Timeout);
-                    }
-                    catch (HttpRequestException e) when (e.Message.Contains("401"))
+                    if (response.StatusCode == HttpStatusCode.Unauthorized)
                     {
                         return new TokenResponse(AuthError.InvalidCredentials);
                     }
-                    catch (Exception e)
+                    if (response.StatusCode == HttpStatusCode.Forbidden)
                     {
-                        return new TokenResponse(AuthError.Unknown);
+                        return new TokenResponse(AuthError.InvalidScopes);
                     }
-                });
-            }
-            catch (TimeoutRejectedException e)
-            {
-                return new TokenResponse(AuthError.Timeout);
-            }
+                    return new TokenResponse(AuthError.Unknown);
+                }
+                catch (HttpRequestException e) when (e.Message.Contains("timed out"))
+                {
+                    return new TokenResponse(AuthError.Timeout);
+                }
+                catch (OperationCanceledException e)
+                {
+                    return new TokenResponse(AuthError.Timeout);
+                }
+                catch (HttpRequestException e) when (e.Message.Contains("401"))
+                {
+                    return new TokenResponse(AuthError.InvalidCredentials);
+                }
+                catch (Exception e)
+                {
+                    return new TokenResponse(AuthError.Unknown);
+                }
+            });
+       
                 
         }
 
