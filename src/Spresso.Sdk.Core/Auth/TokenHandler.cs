@@ -17,15 +17,14 @@ namespace Spresso.Sdk.Core.Auth
 {
     public class TokenHandler : ITokenHandler
     {
-        private const string DefaultSpressoBaseAuthUrl = "https://auth.spresso.com";
-        private const string DefaultSpressoAudience = "https://spresso-api";
-        private readonly string _additionalParameters;
+        
         private readonly IDistributedCache _cache;
         private readonly SpressoHttpClientFactory _httpClientFactory;
         private readonly string _spressoBaseAuthUrl;
         private readonly string _tokenCacheKey;
         private readonly string _tokenEndpoint;
         private readonly string _tokenRequest;
+        private readonly TimeSpan _httpTimeout;
         private readonly AsyncPolicyWrap<TokenResponse> _tokenPolicy;
 
         /// <summary>
@@ -39,14 +38,13 @@ namespace Spresso.Sdk.Core.Auth
             options ??= new TokenHandlerOptions();
             _httpClientFactory = options.SpressoHttpClientFactory;
             _tokenCacheKey = $"Spresso.Auth.AuthKey.{options.TokenGroup}";
-            _spressoBaseAuthUrl = Environment.GetEnvironmentVariable("SPRESSO_BASE_AUTH_URL") ?? DefaultSpressoBaseAuthUrl;
-            _additionalParameters = options.AdditionalParameters;
+            _spressoBaseAuthUrl = options.SpressoBaseAuthUrl;
             _tokenEndpoint = "oauth/token";
-            if (!string.IsNullOrEmpty(_additionalParameters))
+            if (!string.IsNullOrEmpty(options.AdditionalParameters))
             {
-                _tokenEndpoint += "?" + _additionalParameters;
+                _tokenEndpoint += "?" + options.AdditionalParameters;
             }
-            var spressoAudience = Environment.GetEnvironmentVariable("SPRESSO_AUDIENCE") ?? DefaultSpressoAudience;
+            var spressoAudience = options.SpressoAudience;
             var tokenRequestBuilder = new Dictionary<string, string>
             {
                 ["client_id"] = clientId,
@@ -62,15 +60,16 @@ namespace Spresso.Sdk.Core.Auth
 
             _cache = options.Cache!;
             _tokenRequest = JsonConvert.SerializeObject(tokenRequestBuilder);
-
+            _httpTimeout = options.Timeout;
+            
             var retryErrors = new[] { AuthError.Timeout, AuthError.Unknown };
-            var retryPolicy = Policy.HandleResult<TokenResponse>(t=>!t.IsSuccess && retryErrors.Contains(t.Error)).RetryAsync(3);
-            var timeoutPolicy = Policy.TimeoutAsync<TokenResponse>(TimeSpan.FromSeconds(1)); // todo: make configurable
+            var retryPolicy = Policy.HandleResult<TokenResponse>(t=>!t.IsSuccess && retryErrors.Contains(t.Error)).RetryAsync(options.NumberOfRetries);
+            var timeoutPolicy = Policy.TimeoutAsync<TokenResponse>(options.Timeout);
 
 
             var circuitBreakerPolicy = Policy.HandleResult<TokenResponse>(t => !t.IsSuccess)
                 .Or<TimeoutRejectedException>()
-                .CircuitBreakerAsync(10, TimeSpan.FromSeconds(60), (state, ts, ctx) =>
+                .CircuitBreakerAsync(options.NumberOfFailuresBeforeTrippingCircuitBreaker, options.CircuitBreakerBreakDuration, (state, ts, ctx) =>
                 {
                     // todo: log
                 }, ctx =>
@@ -103,7 +102,7 @@ namespace Spresso.Sdk.Core.Auth
 
             var httpClient = _httpClientFactory.GetClient();
             httpClient.BaseAddress = new Uri(_spressoBaseAuthUrl);
-            httpClient.Timeout = new TimeSpan(0, 0, 10); // todo: timeout should be configurable
+            httpClient.Timeout = _httpTimeout;
 
             
             return await _tokenPolicy.ExecuteAsync(async () =>
