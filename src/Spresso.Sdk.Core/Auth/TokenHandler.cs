@@ -92,6 +92,11 @@ namespace Spresso.Sdk.Core.Auth
 
         }
 
+        /// <summary>
+        ///    Gets the access token.
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         public async Task<TokenResponse> GetTokenAsync(CancellationToken cancellationToken = default)
         {
             var auth0TokenResponseJson = await _cache.GetStringAsync(_tokenCacheKey, cancellationToken);
@@ -131,17 +136,13 @@ namespace Spresso.Sdk.Core.Auth
                     }
                     return new TokenResponse(AuthError.Unknown);
                 }
-                catch (HttpRequestException e) when (e.Message.Contains("timed out"))
+                catch (HttpRequestException e) when (e.Message.Contains("No connection could be made because the target machine actively refused it."))
                 {
                     return new TokenResponse(AuthError.Timeout);
                 }
                 catch (OperationCanceledException e)
                 {
                     return new TokenResponse(AuthError.Timeout);
-                }
-                catch (HttpRequestException e) when (e.Message.Contains("401"))
-                {
-                    return new TokenResponse(AuthError.InvalidCredentials);
                 }
                 catch (Exception e)
                 {

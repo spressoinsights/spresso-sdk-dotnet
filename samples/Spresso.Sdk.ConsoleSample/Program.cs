@@ -7,7 +7,7 @@ var redisCache = new RedisCache(new OptionsWrapper<RedisCacheOptions>(new RedisC
     Configuration = "localhost"
 }));
 
-    var tokenHandler = new TokenHandler("test123", "secret", new TokenHandlerOptions { Cache = redisCache, AdditionalParameters = "status=500", SpressoBaseAuthUrl = Environment.GetEnvironmentVariable("SPRESSO_BASE_AUTH_URL") });
+    var tokenHandler = new TokenHandler("test123", "secret", new TokenHandlerOptions { Cache = redisCache, AdditionalParameters = "status=401", SpressoBaseAuthUrl = Environment.GetEnvironmentVariable("SPRESSO_BASE_AUTH_URL") });
     for (int i = 0; i < 50; i++)
     {
         
