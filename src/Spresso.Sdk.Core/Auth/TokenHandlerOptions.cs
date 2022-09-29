@@ -107,9 +107,9 @@ namespace Spresso.Sdk.Core.Auth
         }
 
         /// <summary>
-        ///     The duration of the circuit breaker break in which all requests will quickly fail
+        ///     The duration of the circuit breaker break in which all requests will quickly fail. Default is 60 seconds
         /// </summary>
-        public TimeSpan CircuitBreakerBreakDuration { get; set; }
+        public TimeSpan CircuitBreakerBreakDuration { get; set; } = new TimeSpan(0, 0, 0, 60);
 
         /// <summary>
         ///     Http timeout.  Default is 30 seconds.
