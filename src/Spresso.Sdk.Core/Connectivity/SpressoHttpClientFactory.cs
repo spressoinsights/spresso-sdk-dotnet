@@ -11,7 +11,7 @@ namespace Spresso.Sdk.Core.Connectivity
     public class SpressoHttpClientFactory
     {
         public static readonly SpressoHttpClientFactory Default = new SpressoHttpClientFactory();
-        private readonly IHttpClientFactory _managedHttpClientFactory;
+        private readonly IHttpClientFactory? _managedHttpClientFactory;
         private readonly System.Net.Http.IHttpClientFactory? _providedHttpClientFactory;
 
         public SpressoHttpClientFactory(System.Net.Http.IHttpClientFactory? providedHttpClientFactory)
@@ -34,7 +34,7 @@ namespace Spresso.Sdk.Core.Connectivity
             {
                 return _providedHttpClientFactory.CreateClient("spresso");
             }
-            return _managedHttpClientFactory.CreateClient("spresso");
+            return _managedHttpClientFactory!.CreateClient("spresso");
         }
     }
 }

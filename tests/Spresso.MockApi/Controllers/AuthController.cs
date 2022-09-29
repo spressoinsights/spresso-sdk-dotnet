@@ -46,7 +46,7 @@ namespace Spresso.MockApi.Controllers ;
             claims.Add(new Claim("https://api.spresso.com/services", JsonSerializer.Serialize(serviceList), JsonClaimValueTypes.JsonArray));
             claims.Add(new Claim("gty", "client-credentials"));
             claims.Add(new Claim("permissions", JsonSerializer.Serialize(claims.Single(c => c.Type == "scope").Value.Split(' ')), JsonClaimValueTypes.JsonArray));
-            claims.Add(new Claim("azp", request.client_id));
+            claims.Add(new Claim("azp", request.client_id!));
             claims.Add(new Claim("sub", request.client_id + "@clients"));
 
 
@@ -82,7 +82,7 @@ namespace Spresso.MockApi.Controllers ;
     {
         public string? client_id { get; set; }
         public string? client_secret { get; set; }
-        public string audience { get; set; }
-        public string grant_type { get; set; }
+        public string? audience { get; set; }
+        public string? grant_type { get; set; }
         public string scope { get; set; } = string.Empty;
     }

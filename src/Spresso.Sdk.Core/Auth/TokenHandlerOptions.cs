@@ -1,6 +1,8 @@
 ﻿using System;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Spresso.Sdk.Core.Connectivity;
 
@@ -101,8 +103,13 @@ namespace Spresso.Sdk.Core.Auth
         public TimeSpan CircuitBreakerBreakDuration { get; set; }
 
         /// <summary>
-        /// Http timeout.  Default is 10 seconds.
+        /// Http timeout.  Default is 30 seconds.
         /// </summary>
-        public TimeSpan HttpTimeout { get; set; } = new TimeSpan(0, 0, 0, 10);
+        public TimeSpan HttpTimeout { get; set; } = new TimeSpan(0, 0, 0, 30);
+
+        /// <summary>
+        /// Logger for debug events
+        /// </summary>
+        public ILogger<TokenHandler> Logger { get; set; } = new NullLogger<TokenHandler>();
     }
 }
