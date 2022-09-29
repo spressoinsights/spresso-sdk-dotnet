@@ -12,10 +12,10 @@ namespace Spresso.Sdk.Core.Auth
     {
         private const string DefaultSpressoBaseAuthUrl = "https://auth.spresso.com";
         private const string DefaultSpressoAudience = "https://spresso-api";
+        private int _numberOfFailuresBeforeTrippingCircuitBreaker = 10;
 
         private int _numberOfRetries = 3;
         private TimeSpan _timeout = new TimeSpan(0, 0, 0, 30);
-        private int _numberOfFailuresBeforeTrippingCircuitBreaker = 10;
 
         /// <summary>
         ///     Caches tokens for faster performance.  Note: tokens are not encrypted
@@ -46,25 +46,31 @@ namespace Spresso.Sdk.Core.Auth
         public string AdditionalParameters { get; set; } = string.Empty;
 
         /// <summary>
-        ///    The number of retries to attempt when a token request fails, via error or timeout.
+        ///     The number of retries to attempt when a token request fails, via error or timeout.
         /// </summary>
         public int NumberOfRetries
         {
             get => _numberOfRetries;
             set
             {
-                if (value >= 0 && value <= 10) _numberOfRetries = value;
-                if (value < 0) _numberOfRetries = 0;
+                if (value >= 0 && value <= 10)
+                {
+                    _numberOfRetries = value;
+                }
+                if (value < 0)
+                {
+                    _numberOfRetries = 0;
+                }
             }
         }
 
         /// <summary>
-        ///    The base url for the token endpoint.  This is usually https://auth.spresso.com
+        ///     The base url for the token endpoint.  This is usually https://auth.spresso.com
         /// </summary>
         public string SpressoBaseAuthUrl { get; set; } = DefaultSpressoBaseAuthUrl;
 
         /// <summary>
-        ///   The audience for the token endpoint.  This is usually https://spresso-api
+        ///     The audience for the token endpoint.  This is usually https://spresso-api
         /// </summary>
         public string SpressoAudience { get; set; } = DefaultSpressoAudience;
 
@@ -84,7 +90,8 @@ namespace Spresso.Sdk.Core.Auth
         }
 
         /// <summary>
-        ///     The number of failures before the circuit breaker trips.  When the circuit breaker is tripped all token requests for a <see cref="CircuitBreakerBreakDuration"/>period of time will fail quickly.
+        ///     The number of failures before the circuit breaker trips.  When the circuit breaker is tripped all token requests
+        ///     for a <see cref="CircuitBreakerBreakDuration" />period of time will fail quickly.
         /// </summary>
         public int NumberOfFailuresBeforeTrippingCircuitBreaker
         {
@@ -92,23 +99,25 @@ namespace Spresso.Sdk.Core.Auth
             set
             {
                 if (value < 1)
+                {
                     value = 1;
+                }
                 _numberOfFailuresBeforeTrippingCircuitBreaker = value;
             }
         }
 
         /// <summary>
-        ///    The duration of the circuit breaker break in which all requests will quickly fail
+        ///     The duration of the circuit breaker break in which all requests will quickly fail
         /// </summary>
         public TimeSpan CircuitBreakerBreakDuration { get; set; }
 
         /// <summary>
-        /// Http timeout.  Default is 30 seconds.
+        ///     Http timeout.  Default is 30 seconds.
         /// </summary>
         public TimeSpan HttpTimeout { get; set; } = new TimeSpan(0, 0, 0, 30);
 
         /// <summary>
-        /// Logger for debug events
+        ///     Logger for debug events
         /// </summary>
         public ILogger<TokenHandler> Logger { get; set; } = new NullLogger<TokenHandler>();
     }

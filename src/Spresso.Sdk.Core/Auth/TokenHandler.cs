@@ -8,7 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 using Polly;
 using Polly.Timeout;
@@ -19,16 +18,15 @@ namespace Spresso.Sdk.Core.Auth
 {
     public class TokenHandler : ITokenHandler
     {
-        private readonly ILogger<TokenHandler>? _logger;
-
         private readonly IDistributedCache _cache;
         private readonly SpressoHttpClientFactory _httpClientFactory;
+        private readonly TimeSpan _httpTimeout;
+        private readonly ILogger<TokenHandler>? _logger;
         private readonly string _spressoBaseAuthUrl;
         private readonly string _tokenCacheKey;
         private readonly string _tokenEndpoint;
-        private readonly string _tokenRequest;
-        private readonly TimeSpan _httpTimeout;
         private readonly AsyncPolicyWrap<TokenResponse> _tokenPolicy;
+        private readonly string _tokenRequest;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="TokenHandler" /> class.
@@ -65,46 +63,41 @@ namespace Spresso.Sdk.Core.Auth
             _cache = options.Cache!;
             _tokenRequest = JsonConvert.SerializeObject(tokenRequestBuilder);
             _httpTimeout = options.HttpTimeout;
-            
+
             var retryErrors = new[] { AuthError.Timeout, AuthError.Unknown };
-            var retryPolicy = Policy.HandleResult<TokenResponse>(t=>!t.IsSuccess && retryErrors.Contains(t.Error)).RetryAsync(options.NumberOfRetries);
+            var retryPolicy = Policy.HandleResult<TokenResponse>(t => !t.IsSuccess && retryErrors.Contains(t.Error)).RetryAsync(options.NumberOfRetries);
             var timeoutPolicy = Policy.TimeoutAsync<TokenResponse>(options.Timeout, TimeoutStrategy.Pessimistic);
 
 
             var circuitBreakerPolicy = Policy.HandleResult<TokenResponse>(t => !t.IsSuccess)
                 .Or<TimeoutRejectedException>()
-                .CircuitBreakerAsync(options.NumberOfFailuresBeforeTrippingCircuitBreaker, options.CircuitBreakerBreakDuration, (state, ts, ctx) =>
-                {
-                    _logger.LogDebug("Token circuit breaker tripped");
-                }, ctx =>
-                {
-                    _logger.LogDebug("Token circuit breaker reset");
-                });
+                .CircuitBreakerAsync(options.NumberOfFailuresBeforeTrippingCircuitBreaker, options.CircuitBreakerBreakDuration,
+                    (state, ts, ctx) => { _logger.LogDebug("Token circuit breaker tripped"); }, ctx => { _logger.LogDebug("Token circuit breaker reset"); });
 
             var fallbackPolicy = Policy.Handle<Exception>().OrResult<TokenResponse>(r => !r.IsSuccess).FallbackAsync((tokenResponse, ctx, cancellationToken) =>
-             {
-                if (_logger!.IsEnabled(LogLevel.Debug)) _logger.LogDebug("Token request failed.  Result {0}", tokenResponse.Result);
-                 if (tokenResponse.Exception != null)
-                 {
-                     if (tokenResponse.Exception is TimeoutRejectedException)
-                     {
-                         return Task.FromResult(new TokenResponse(AuthError.Timeout));
-                     }
-                     return Task.FromResult(new TokenResponse(AuthError.Unknown));
-                 }
-                   
+            {
+                if (_logger!.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Token request failed.  Result {0}", tokenResponse.Result);
+                }
+                if (tokenResponse.Exception != null)
+                {
+                    if (tokenResponse.Exception is TimeoutRejectedException)
+                    {
+                        return Task.FromResult(new TokenResponse(AuthError.Timeout));
+                    }
+                    return Task.FromResult(new TokenResponse(AuthError.Unknown));
+                }
+
                 return Task.FromResult(tokenResponse.Result);
             }, (result, context) => Task.CompletedTask);
 
 
-
             _tokenPolicy = Policy.WrapAsync(fallbackPolicy, circuitBreakerPolicy, timeoutPolicy, retryPolicy);
-
-
         }
 
         /// <summary>
-        ///    Gets the access token.
+        ///     Gets the access token.
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
@@ -120,7 +113,7 @@ namespace Spresso.Sdk.Core.Auth
             httpClient.BaseAddress = new Uri(_spressoBaseAuthUrl);
             httpClient.Timeout = _httpTimeout;
 
-            
+
             return await _tokenPolicy.ExecuteAsync(async () =>
             {
                 try
@@ -128,7 +121,10 @@ namespace Spresso.Sdk.Core.Auth
                     _logger!.LogDebug("Fetching token");
                     var response = await httpClient.PostAsync(_tokenEndpoint, new StringContent(_tokenRequest, Encoding.UTF8, "application/json"),
                         cancellationToken);
-                    if(_logger!.IsEnabled(LogLevel.Debug)) _logger.LogDebug("Token status code {0}", response.StatusCode);
+                    if (_logger!.IsEnabled(LogLevel.Debug))
+                    {
+                        _logger.LogDebug("Token status code {0}", response.StatusCode);
+                    }
                     if (response.IsSuccessStatusCode)
                     {
                         auth0TokenResponseJson = await response.Content.ReadAsStringAsync();
@@ -162,8 +158,6 @@ namespace Spresso.Sdk.Core.Auth
                     return new TokenResponse(AuthError.Unknown);
                 }
             });
-       
-                
         }
 
         private TokenResponse CreateTokenResponse(string auth0TokenResponseJson)
