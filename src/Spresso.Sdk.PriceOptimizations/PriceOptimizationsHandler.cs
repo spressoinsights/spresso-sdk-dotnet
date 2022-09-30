@@ -14,14 +14,14 @@ namespace Spresso.Sdk.PriceOptimizations
     public class PriceOptimizationsHandler : IPriceOptimizationHandler
     {
         private const string TokenCacheKeyPrefix = "Spresso.PriceOptimizations";
-        private readonly IDistributedCache? _cache;
-        private readonly SpressoHttpClientFactory _httpClientFactory;
-        private readonly ITokenHandler _tokenHandler;
-        private readonly ILogger<IPriceOptimizationHandler> _logger;
-        private readonly string _cacheNamespace;
-        private readonly TimeSpan _httpTimeout;
-        private readonly TimeSpan _cacheDuration;
         private readonly string _baseUrl;
+        private readonly IDistributedCache? _cache;
+        private readonly TimeSpan _cacheDuration;
+        private readonly string _cacheNamespace;
+        private readonly SpressoHttpClientFactory _httpClientFactory;
+        private readonly TimeSpan _httpTimeout;
+        private readonly ILogger<IPriceOptimizationHandler> _logger;
+        private readonly ITokenHandler _tokenHandler;
 
         public PriceOptimizationsHandler(ITokenHandler tokenHandler, PriceOptimizationsHandlerOptions? options = null)
         {
@@ -38,13 +38,15 @@ namespace Spresso.Sdk.PriceOptimizations
 
 
         //todo: paging
-        
-        public async Task<GetPriceOptimizationsResponse> GetPriceOptimizationAsync(GetPriceOptimizationsRequest request, CancellationToken cancellationToken = default)
+
+        public async Task<GetPriceOptimizationsResponse> GetPriceOptimizationAsync(GetPriceOptimizationsRequest request,
+            CancellationToken cancellationToken = default)
         {
             var cacheKey = $"{_cacheNamespace}.{request.DeviceId}.{request.ItemId}";
             if (_logger.IsEnabled(LogLevel.Debug))
             {
-                _logger.LogDebug("@@PriceOptimizationsHandler.GetPriceOptimizationAsync@@ fetching optimization [device: {0}, item: {1}]", request.DeviceId, request.ItemId);
+                _logger.LogDebug("@@PriceOptimizationsHandler.GetPriceOptimizationAsync@@ fetching optimization [device: {0}, item: {1}]", request.DeviceId,
+                    request.ItemId);
             }
 
             var cachedPriceOptimization = await _cache.GetStringAsync(cacheKey, cancellationToken);
@@ -52,7 +54,8 @@ namespace Spresso.Sdk.PriceOptimizations
             {
                 if (_logger.IsEnabled(LogLevel.Debug))
                 {
-                    _logger.LogDebug("@@PriceOptimizationsHandler.GetPriceOptimizationAsync@@ cache hit [device: {0}, item: {1}]", request.DeviceId, request.ItemId);
+                    _logger.LogDebug("@@PriceOptimizationsHandler.GetPriceOptimizationAsync@@ cache hit [device: {0}, item: {1}]", request.DeviceId,
+                        request.ItemId);
                 }
 
                 var priceOptimization = CreatePriceOptimization(cachedPriceOptimization);
@@ -61,7 +64,8 @@ namespace Spresso.Sdk.PriceOptimizations
 
             if (_logger.IsEnabled(LogLevel.Debug))
             {
-                _logger.LogDebug("@@PriceOptimizationsHandler.GetPriceOptimizationAsync@@ cache miss, calling api [device: {0}, item: {1}]", request.DeviceId, request.ItemId);
+                _logger.LogDebug("@@PriceOptimizationsHandler.GetPriceOptimizationAsync@@ cache miss, calling api [device: {0}, item: {1}]", request.DeviceId,
+                    request.ItemId);
             }
 
             var tokenResponse = await _tokenHandler.GetTokenAsync(cancellationToken);
@@ -76,14 +80,17 @@ namespace Spresso.Sdk.PriceOptimizations
             }
 
             var token = tokenResponse.Token!;
-            
+
             var httpClient = _httpClientFactory.GetClient();
             httpClient.BaseAddress = new Uri(_baseUrl);
             httpClient.Timeout = _httpTimeout;
             httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-            var query = $"/v1/priceOptimizations?deviceId={request.DeviceId}&itemId={request.ItemId}&defaultPrice={request.DefaultPrice}&overrideToDefaultPrice={request.OverrideToDefaultPrice}";
-            if (!String.IsNullOrEmpty(request.UserId))
+            var query =
+                $"/v1/priceOptimizations?deviceId={request.DeviceId}&itemId={request.ItemId}&defaultPrice={request.DefaultPrice}&overrideToDefaultPrice={request.OverrideToDefaultPrice}";
+            if (!string.IsNullOrEmpty(request.UserId))
+            {
                 query += $"&userId={request.UserId}";
+            }
 
             try
             {
@@ -110,8 +117,6 @@ namespace Spresso.Sdk.PriceOptimizations
                     default:
                         return new GetPriceOptimizationsResponse(PriceOptimizationError.Unknown);
                 }
-
-
             }
             catch (HttpRequestException e) when (e.Message.Contains("No connection could be made because the target machine actively refused it."))
             {
@@ -125,8 +130,6 @@ namespace Spresso.Sdk.PriceOptimizations
             {
                 return new GetPriceOptimizationsResponse(PriceOptimizationError.Unknown);
             }
-
-
         }
 
         private PriceOptimization CreatePriceOptimization(string priceOptimizationJson)

@@ -11,7 +11,7 @@ namespace Spresso.Sdk.PriceOptimizations
     public struct GetPriceOptimizationsResponse
     {
         public bool IsSuccess => Error != PriceOptimizationError.None;
-        public PriceOptimization? PriceOptimization { get;}
+        public PriceOptimization? PriceOptimization { get; }
         public PriceOptimizationError Error { get; }
 
         public GetPriceOptimizationsResponse(PriceOptimization priceOptimization)
@@ -19,6 +19,7 @@ namespace Spresso.Sdk.PriceOptimizations
             PriceOptimization = priceOptimization;
             Error = PriceOptimizationError.None;
         }
+
         public GetPriceOptimizationsResponse(PriceOptimizationError error)
         {
             PriceOptimization = null;
@@ -42,7 +43,7 @@ namespace Spresso.Sdk.PriceOptimizations
         public string? UserId { get; }
         public decimal DefaultPrice { get; }
         public bool OverrideToDefaultPrice { get; }
-        
+
         public GetPriceOptimizationsRequest(string deviceId, string itemId, decimal defaultPrice, string? userId = null, bool overrideToDefaultPrice = false)
         {
             DeviceId = deviceId;

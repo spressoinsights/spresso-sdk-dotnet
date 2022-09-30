@@ -72,7 +72,8 @@ namespace Spresso.Sdk.Core.Auth
             var circuitBreakerPolicy = Policy.HandleResult<TokenResponse>(t => !t.IsSuccess)
                 .Or<TimeoutRejectedException>()
                 .CircuitBreakerAsync(options.NumberOfFailuresBeforeTrippingCircuitBreaker, options.CircuitBreakerBreakDuration,
-                    (state, ts, ctx) => { _logger.LogError("@@TokenHandler@@ Token circuit breaker tripped"); }, ctx => { _logger.LogDebug("@@TokenHandler@@ Token circuit breaker reset"); });
+                    (state, ts, ctx) => { _logger.LogError("@@TokenHandler@@ Token circuit breaker tripped"); },
+                    ctx => { _logger.LogDebug("@@TokenHandler@@ Token circuit breaker reset"); });
 
             var fallbackPolicy = Policy.Handle<Exception>().OrResult<TokenResponse>(r => !r.IsSuccess).FallbackAsync((tokenResponse, ctx, cancellationToken) =>
             {
@@ -117,7 +118,7 @@ namespace Spresso.Sdk.Core.Auth
                     httpClient.BaseAddress = new Uri(_spressoBaseAuthUrl);
                     httpClient.Timeout = _httpTimeout;
 
-                    
+
                     _logger!.LogDebug("@@TokenHandler.GetTokenAsync@@ Fetching token");
                     var response = await httpClient.PostAsync(_tokenEndpoint, new StringContent(_tokenRequest, Encoding.UTF8, "application/json"),
                         cancellationToken);

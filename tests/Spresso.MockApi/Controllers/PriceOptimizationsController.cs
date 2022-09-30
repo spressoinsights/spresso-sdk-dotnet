@@ -1,14 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace Spresso.MockApi.Controllers
-{
-    
+namespace Spresso.MockApi.Controllers ;
+
     [ApiController]
     [Route("v1")]
     public class PriceOptimizationsController : Controller
     {
         [HttpGet("priceOptimizations")]
-        public async Task<IActionResult> GetSinglePriceOptimization([FromQuery]GetSinglePriceOptimizationRequest request, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> GetSinglePriceOptimization([FromQuery] GetSinglePriceOptimizationRequest request,
+            CancellationToken cancellationToken = default)
         {
             if (Request.Query.ContainsKey("status"))
             {
@@ -31,16 +31,16 @@ namespace Spresso.MockApi.Controllers
             var defaultPriceInt = (int)(request.DefaultPrice * 100);
             var rangeInt = (int)(0.1m * defaultPriceInt);
 
-            var price = Random.Shared.Next(defaultPriceInt - rangeInt, defaultPriceInt + rangeInt)/100m;
+            var price = Random.Shared.Next(defaultPriceInt - rangeInt, defaultPriceInt + rangeInt) / 100m;
             return Ok(new
             {
                 data = new PriceOptimization(request.ItemId, request.DeviceId, price, true, request.UserId)
             });
-
         }
 
         [HttpPost("priceOptimizations")]
-        public async Task<IActionResult> GetBatchPriceOptimizations([FromBody] GetBatchPriceOptimizationsRequest request, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> GetBatchPriceOptimizations([FromBody] GetBatchPriceOptimizationsRequest request,
+            CancellationToken cancellationToken = default)
         {
             if (Request.Query.ContainsKey("status"))
             {
@@ -60,7 +60,6 @@ namespace Spresso.MockApi.Controllers
 
             var response = new List<PriceOptimization>(request.PricingRefs.Length);
             foreach (var pricingRef in request.PricingRefs)
-            {
                 if (pricingRef.OverrideToDefaultPrice || Random.Shared.Next(10) >= 7)
                 {
                     response.Add(new PriceOptimization(pricingRef.ItemId, pricingRef.DeviceId, pricingRef.DefaultPrice, false, pricingRef.UserId));
@@ -73,19 +72,18 @@ namespace Spresso.MockApi.Controllers
                     var price = Random.Shared.Next(defaultPriceInt - rangeInt, defaultPriceInt + rangeInt) / 100m;
                     response.Add(new PriceOptimization(pricingRef.ItemId, pricingRef.DeviceId, price, true, pricingRef.UserId));
                 }
-            }
 
             return Ok(new
             {
                 Data = response
             });
-
         }
 
         public class GetBatchPriceOptimizationsRequest
         {
             public GetSinglePriceOptimizationRequest[] PricingRefs { get; set; }
         }
+
         public class GetSinglePriceOptimizationRequest
         {
             public string ItemId { get; set; }
@@ -97,4 +95,3 @@ namespace Spresso.MockApi.Controllers
 
         public record PriceOptimization(string ItemId, string DeviceId, decimal Price, bool IsOptimizedPrice, string? UserId = default);
     }
-}
