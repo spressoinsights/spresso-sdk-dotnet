@@ -21,7 +21,7 @@ namespace Spresso.Sdk.Core.Auth
         private readonly IDistributedCache _cache;
         private readonly SpressoHttpClientFactory _httpClientFactory;
         private readonly TimeSpan _httpTimeout;
-        private readonly ILogger<TokenHandler>? _logger;
+        private readonly ILogger<ITokenHandler>? _logger;
         private readonly string _spressoBaseAuthUrl;
         private readonly string _tokenCacheKey;
         private readonly string _tokenEndpoint;
@@ -72,13 +72,13 @@ namespace Spresso.Sdk.Core.Auth
             var circuitBreakerPolicy = Policy.HandleResult<TokenResponse>(t => !t.IsSuccess)
                 .Or<TimeoutRejectedException>()
                 .CircuitBreakerAsync(options.NumberOfFailuresBeforeTrippingCircuitBreaker, options.CircuitBreakerBreakDuration,
-                    (state, ts, ctx) => { _logger.LogDebug("Token circuit breaker tripped"); }, ctx => { _logger.LogDebug("Token circuit breaker reset"); });
+                    (state, ts, ctx) => { _logger.LogError("@@TokenHandler@@ Token circuit breaker tripped"); }, ctx => { _logger.LogDebug("@@TokenHandler@@ Token circuit breaker reset"); });
 
             var fallbackPolicy = Policy.Handle<Exception>().OrResult<TokenResponse>(r => !r.IsSuccess).FallbackAsync((tokenResponse, ctx, cancellationToken) =>
             {
-                if (_logger!.IsEnabled(LogLevel.Debug))
+                if (_logger!.IsEnabled(LogLevel.Error))
                 {
-                    _logger.LogDebug("Token request failed.  Result {0}", tokenResponse.Result);
+                    _logger.LogError("@@TokenHandler@@ Token request failed.  Error {0}", tokenResponse.Result.Error);
                 }
                 if (tokenResponse.Exception != null)
                 {
@@ -103,27 +103,27 @@ namespace Spresso.Sdk.Core.Auth
         /// <returns></returns>
         public async Task<TokenResponse> GetTokenAsync(CancellationToken cancellationToken = default)
         {
-            var auth0TokenResponseJson = await _cache.GetStringAsync(_tokenCacheKey, cancellationToken);
-            if (!string.IsNullOrEmpty(auth0TokenResponseJson))
-            {
-                return CreateTokenResponse(auth0TokenResponseJson);
-            }
-
-            var httpClient = _httpClientFactory.GetClient();
-            httpClient.BaseAddress = new Uri(_spressoBaseAuthUrl);
-            httpClient.Timeout = _httpTimeout;
-
-
             return await _tokenPolicy.ExecuteAsync(async () =>
             {
                 try
                 {
-                    _logger!.LogDebug("Fetching token");
+                    var auth0TokenResponseJson = await _cache.GetStringAsync(_tokenCacheKey, cancellationToken);
+                    if (!string.IsNullOrEmpty(auth0TokenResponseJson))
+                    {
+                        return CreateTokenResponse(auth0TokenResponseJson);
+                    }
+
+                    var httpClient = _httpClientFactory.GetClient();
+                    httpClient.BaseAddress = new Uri(_spressoBaseAuthUrl);
+                    httpClient.Timeout = _httpTimeout;
+
+                    
+                    _logger!.LogDebug("@@TokenHandler.GetTokenAsync@@ Fetching token");
                     var response = await httpClient.PostAsync(_tokenEndpoint, new StringContent(_tokenRequest, Encoding.UTF8, "application/json"),
                         cancellationToken);
                     if (_logger!.IsEnabled(LogLevel.Debug))
                     {
-                        _logger.LogDebug("Token status code {0}", response.StatusCode);
+                        _logger.LogDebug("@@TokenHandler.GetTokenAsync@@ Token status code {0}", response.StatusCode);
                     }
                     if (response.IsSuccessStatusCode)
                     {
@@ -135,15 +135,15 @@ namespace Spresso.Sdk.Core.Auth
                         }, cancellationToken);
                         return tokenResponse;
                     }
-                    if (response.StatusCode == HttpStatusCode.Unauthorized)
+                    switch (response.StatusCode)
                     {
-                        return new TokenResponse(AuthError.InvalidCredentials);
+                        case HttpStatusCode.Unauthorized:
+                            return new TokenResponse(AuthError.InvalidCredentials);
+                        case HttpStatusCode.Forbidden:
+                            return new TokenResponse(AuthError.InvalidScopes);
+                        default:
+                            return new TokenResponse(AuthError.Unknown);
                     }
-                    if (response.StatusCode == HttpStatusCode.Forbidden)
-                    {
-                        return new TokenResponse(AuthError.InvalidScopes);
-                    }
-                    return new TokenResponse(AuthError.Unknown);
                 }
                 catch (HttpRequestException e) when (e.Message.Contains("No connection could be made because the target machine actively refused it."))
                 {

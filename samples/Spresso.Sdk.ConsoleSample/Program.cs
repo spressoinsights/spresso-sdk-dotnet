@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Options;
 using Spresso.Sdk.Core.Auth;
+using Spresso.Sdk.PriceOptimizations;
 
 var redisCache = new RedisCache(new OptionsWrapper<RedisCacheOptions>(new RedisCacheOptions
 {
@@ -12,15 +13,18 @@ var redisCache = new RedisCache(new OptionsWrapper<RedisCacheOptions>(new RedisC
         new TokenHandlerOptions
         {
             Cache = redisCache,
-            AdditionalParameters = "delay=32",
-            SpressoBaseAuthUrl = Environment.GetEnvironmentVariable("SPRESSO_BASE_AUTH_URL"),
+            AdditionalParameters = "",
+            SpressoBaseAuthUrl = Environment.GetEnvironmentVariable("SPRESSO_BASE_AUTH_URL")
         });
-    for (var i = 0; i < 50; i++)
-    {
-        var tokenResponse = await tokenHandler.GetTokenAsync();
 
-        Console.WriteLine("Token: " + tokenResponse.Token);
-    }
+    var priceOptimizationHandler = new PriceOptimizationsHandler(tokenHandler, new PriceOptimizationsHandlerOptions
+    {
+        SpressoBaseUrl = Environment.GetEnvironmentVariable("SPRESSO_BASE_AUTH_URL"),
+        Cache = redisCache
+    });
+
+    var response = await priceOptimizationHandler.GetPriceOptimizationAsync(new GetPriceOptimizationsRequest("123", "456", 8.95m));
+
 
 
     Console.ReadKey();

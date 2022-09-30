@@ -119,6 +119,6 @@ namespace Spresso.Sdk.Core.Auth
         /// <summary>
         ///     Logger for debug events
         /// </summary>
-        public ILogger<TokenHandler> Logger { get; set; } = new NullLogger<TokenHandler>();
+        public ILogger<ITokenHandler> Logger { get; set; } = new NullLogger<ITokenHandler>();
     }
 }

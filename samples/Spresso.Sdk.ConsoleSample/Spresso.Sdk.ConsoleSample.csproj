@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Spresso.Sdk.Core\Spresso.Sdk.Core.csproj" />
+    <ProjectReference Include="..\..\src\Spresso.Sdk.PriceOptimizations\Spresso.Sdk.PriceOptimizations.csproj" />
   </ItemGroup>
 
 </Project>
