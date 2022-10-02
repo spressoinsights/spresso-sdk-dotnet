@@ -25,10 +25,16 @@ namespace Spresso.Sdk.PriceOptimizations
             PriceOptimization = priceOptimization;
             Error = PriceOptimizationError.None;
         }
-
         public GetPriceOptimizationsResponse(PriceOptimizationError error)
         {
+
             PriceOptimization = null;
+            Error = error;
+        }
+        public GetPriceOptimizationsResponse(PriceOptimizationError error, PriceOptimization priceOptimization)
+        {
+
+            PriceOptimization = priceOptimization;
             Error = error;
         }
     }
@@ -37,7 +43,7 @@ namespace Spresso.Sdk.PriceOptimizations
     {
         public string ItemId { get; set; }
         public string DeviceId { get; set; }
-        public string UserId { get; set; }
+        public string? UserId { get; set; }
         public decimal Price { get; set; }
         public bool IsOptimizedPrice { get; set; }
     }

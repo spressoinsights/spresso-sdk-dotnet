@@ -72,7 +72,7 @@ namespace Spresso.Sdk.PriceOptimizations
         public async Task<GetPriceOptimizationsResponse> GetPriceOptimizationAsync(GetPriceOptimizationsRequest request,
             CancellationToken cancellationToken = default)
         {
-            return await _getPriceOptimizationPolicy.ExecuteAsync(async () =>
+            var po = await _getPriceOptimizationPolicy.ExecuteAsync(async () =>
             {
                 var cacheKey = $"{_cacheNamespace}.{request.DeviceId}.{request.ItemId}";
                 const string logNamespace = "@@PriceOptimizationsHandler.GetPriceOptimizationAsync@@";
@@ -165,6 +165,21 @@ namespace Spresso.Sdk.PriceOptimizations
                 {
                     return new GetPriceOptimizationsResponse(PriceOptimizationError.Unknown);
                 }
+            });
+
+            if (po.IsSuccess)
+            {
+                return po;
+            }
+
+            // create a price optimization upon failure using the default price
+            return new GetPriceOptimizationsResponse(po.Error, new PriceOptimization
+            {
+                UserId = request.UserId,
+                DeviceId = request.DeviceId,
+                ItemId = request.ItemId,
+                IsOptimizedPrice = false,
+                Price = request.DefaultPrice,
             });
         }
         
