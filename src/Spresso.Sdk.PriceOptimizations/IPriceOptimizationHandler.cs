@@ -8,9 +8,15 @@ namespace Spresso.Sdk.PriceOptimizations
         Task<GetPriceOptimizationsResponse> GetPriceOptimizationAsync(GetPriceOptimizationsRequest request, CancellationToken cancellationToken = default);
     }
 
-    public struct GetPriceOptimizationsResponse
+    public interface IPriceOptimizationResult
     {
-        public bool IsSuccess => Error != PriceOptimizationError.None;
+        public bool IsSuccess { get; }
+        public PriceOptimizationError Error { get; }
+
+    }
+    public readonly struct GetPriceOptimizationsResponse : IPriceOptimizationResult
+    {
+        public bool IsSuccess => Error == PriceOptimizationError.None;
         public PriceOptimization? PriceOptimization { get; }
         public PriceOptimizationError Error { get; }
 
