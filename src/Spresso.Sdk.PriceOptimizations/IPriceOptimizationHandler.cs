@@ -1,43 +1,74 @@
-﻿using System.Threading;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Spresso.Sdk.PriceOptimizations
 {
     public interface IPriceOptimizationHandler
     {
-        Task<GetPriceOptimizationsResponse> GetPriceOptimizationAsync(GetPriceOptimizationsRequest request, CancellationToken cancellationToken = default);
+        Task<GetPriceOptimizationResponse> GetPriceOptimizationAsync(GetPriceOptimizationRequest request, CancellationToken cancellationToken = default);
+
+        Task<GetBatchPriceOptimizationsResponse> GetBatchPriceOptimizationsAsync(GetBatchPriceOptimizationsRequest request,
+            CancellationToken cancellationToken = default);
     }
+
 
     public interface IPriceOptimizationResult
     {
         public bool IsSuccess { get; }
         public PriceOptimizationError Error { get; }
-
     }
-    public readonly struct GetPriceOptimizationsResponse : IPriceOptimizationResult
+
+    public readonly struct GetPriceOptimizationResponse : IPriceOptimizationResult
     {
         public bool IsSuccess => Error == PriceOptimizationError.None;
         public PriceOptimization? PriceOptimization { get; }
         public PriceOptimizationError Error { get; }
 
-        public GetPriceOptimizationsResponse(PriceOptimization priceOptimization)
+        public GetPriceOptimizationResponse(PriceOptimization priceOptimization)
         {
             PriceOptimization = priceOptimization;
             Error = PriceOptimizationError.None;
         }
-        public GetPriceOptimizationsResponse(PriceOptimizationError error)
-        {
 
+        public GetPriceOptimizationResponse(PriceOptimizationError error)
+        {
             PriceOptimization = null;
             Error = error;
         }
-        public GetPriceOptimizationsResponse(PriceOptimizationError error, PriceOptimization priceOptimization)
-        {
 
+        public GetPriceOptimizationResponse(PriceOptimizationError error, PriceOptimization priceOptimization)
+        {
             PriceOptimization = priceOptimization;
             Error = error;
         }
     }
+
+    public readonly struct GetBatchPriceOptimizationsResponse : IPriceOptimizationResult
+    {
+        public bool IsSuccess => Error == PriceOptimizationError.None;
+        public PriceOptimizationError Error { get; }
+        public IEnumerable<PriceOptimization> PriceOptimizations { get; }
+
+        public GetBatchPriceOptimizationsResponse(IEnumerable<PriceOptimization> priceOptimizations)
+        {
+            PriceOptimizations = priceOptimizations;
+            Error = PriceOptimizationError.None;
+        }
+      
+        public GetBatchPriceOptimizationsResponse(PriceOptimizationError error)
+        {
+            PriceOptimizations = Array.Empty<PriceOptimization>();
+            Error = error;
+        }
+        public GetBatchPriceOptimizationsResponse(PriceOptimizationError error, IEnumerable<PriceOptimization> priceOptimizations)
+        {
+            PriceOptimizations = priceOptimizations;
+            Error = error;
+        }
+    }
+
 
     public struct PriceOptimization
     {
@@ -48,7 +79,7 @@ namespace Spresso.Sdk.PriceOptimizations
         public bool IsOptimizedPrice { get; set; }
     }
 
-    public struct GetPriceOptimizationsRequest
+    public readonly struct GetPriceOptimizationRequest
     {
         public string DeviceId { get; }
         public string ItemId { get; }
@@ -56,7 +87,7 @@ namespace Spresso.Sdk.PriceOptimizations
         public decimal DefaultPrice { get; }
         public bool OverrideToDefaultPrice { get; }
 
-        public GetPriceOptimizationsRequest(string deviceId, string itemId, decimal defaultPrice, string? userId = null, bool overrideToDefaultPrice = false)
+        public GetPriceOptimizationRequest(string deviceId, string itemId, decimal defaultPrice, string? userId = null, bool overrideToDefaultPrice = false)
         {
             DeviceId = deviceId;
             ItemId = itemId;
@@ -65,6 +96,18 @@ namespace Spresso.Sdk.PriceOptimizations
             OverrideToDefaultPrice = overrideToDefaultPrice;
         }
     }
+
+
+    public readonly struct GetBatchPriceOptimizationsRequest
+    {
+        public IEnumerable<GetPriceOptimizationRequest> Requests { get; }
+
+        public GetBatchPriceOptimizationsRequest(IEnumerable<GetPriceOptimizationRequest> requests)
+        {
+            Requests = requests;
+        }
+    }
+
 
     public enum PriceOptimizationError
     {

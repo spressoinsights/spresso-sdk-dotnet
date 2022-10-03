@@ -1,13 +1,17 @@
 ﻿using System;
+using System.Buffers;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Polly;
 using Polly.Timeout;
 using Spresso.Sdk.Core.Auth;
@@ -19,16 +23,18 @@ namespace Spresso.Sdk.PriceOptimizations
     public class PriceOptimizationsHandler : IPriceOptimizationHandler
     {
         private const string TokenCacheKeyPrefix = "Spresso.PriceOptimizations";
+        private const int MaxRequestSize = 20;
+        private readonly string _additionalParameters;
         private readonly string _baseUrl;
         private readonly IDistributedCache? _cache;
         private readonly TimeSpan _cacheDuration;
         private readonly string _cacheNamespace;
+        private readonly IAsyncPolicy<GetPriceOptimizationResponse> _getPriceOptimizationPolicy;
+        private readonly IAsyncPolicy<GetBatchPriceOptimizationsResponse> _getPriceOptimizationsBatchPolicy;
         private readonly SpressoHttpClientFactory _httpClientFactory;
         private readonly TimeSpan _httpTimeout;
         private readonly ILogger<IPriceOptimizationHandler> _logger;
         private readonly ITokenHandler _tokenHandler;
-        private readonly IAsyncPolicy<GetPriceOptimizationsResponse> _getPriceOptimizationPolicy;
-        private readonly string _additionalParameters;
 
         public PriceOptimizationsHandler(ITokenHandler tokenHandler, PriceOptimizationsHandlerOptions? options = null)
         {
@@ -43,40 +49,65 @@ namespace Spresso.Sdk.PriceOptimizations
             _cacheDuration = options.CacheDuration;
             _additionalParameters = options.AdditionalParameters;
 
-            _getPriceOptimizationPolicy = CreateResiliencyPolicy<GetPriceOptimizationsResponse>(options, 
-                new FallbackOptions<GetPriceOptimizationsResponse>(
-                    r=>!r.IsSuccess,
+            _getPriceOptimizationPolicy = CreateResiliencyPolicy(options,
+                new FallbackOptions<GetPriceOptimizationResponse>(
+                    r => !r.IsSuccess,
                     (response, ctx, ct) =>
                     {
                         if (_logger!.IsEnabled(LogLevel.Error))
                         {
-                            _logger.LogError("@@{0}.{1}@@ Token request failed.  Error {2}.  Exception (if applicable): {3}", nameof(PriceOptimizationsHandler), nameof(GetPriceOptimizationAsync), response?.Result.Error, response?.Exception?.Message);
+                            _logger.LogError("@@{0}.{1}@@ Token request failed.  Error {2}.  Exception (if applicable): {3}", nameof(PriceOptimizationsHandler),
+                                nameof(GetPriceOptimizationAsync), response?.Result.Error, response?.Exception?.Message);
                         }
                         if (response!.Exception != null)
                         {
                             if (response.Exception is TimeoutRejectedException)
                             {
-                                return Task.FromResult(new GetPriceOptimizationsResponse(PriceOptimizationError.Timeout));
+                                return Task.FromResult(new GetPriceOptimizationResponse(PriceOptimizationError.Timeout));
                             }
-                            return Task.FromResult(new GetPriceOptimizationsResponse(PriceOptimizationError.Unknown));
+                            return Task.FromResult(new GetPriceOptimizationResponse(PriceOptimizationError.Unknown));
                         }
 
                         return Task.FromResult(response.Result);
                     },
                     (result, context) => Task.CompletedTask
-                ));
+                    ));
+
+            _getPriceOptimizationsBatchPolicy = CreateResiliencyPolicy(options,
+                new FallbackOptions<GetBatchPriceOptimizationsResponse>(
+                    r => !r.IsSuccess,
+                    (response, ctx, ct) =>
+                    {
+                        if (_logger!.IsEnabled(LogLevel.Error))
+                        {
+                            _logger.LogError("@@{0}.{1}@@ Token request failed.  Error {2}.  Exception (if applicable): {3}", nameof(PriceOptimizationsHandler),
+                                nameof(GetBatchPriceOptimizationsAsync), response?.Result.Error, response?.Exception?.Message);
+                        }
+                        if (response!.Exception != null)
+                        {
+                            if (response.Exception is TimeoutRejectedException)
+                            {
+                                return Task.FromResult(new GetBatchPriceOptimizationsResponse(PriceOptimizationError.Timeout));
+                            }
+                            return Task.FromResult(new GetBatchPriceOptimizationsResponse(PriceOptimizationError.Unknown));
+                        }
+
+                        return Task.FromResult(response.Result);
+                    },
+                    (result, context) => Task.CompletedTask
+                    ));
         }
 
         //todo: paging
 
-        public async Task<GetPriceOptimizationsResponse> GetPriceOptimizationAsync(GetPriceOptimizationsRequest request,
+        public async Task<GetPriceOptimizationResponse> GetPriceOptimizationAsync(GetPriceOptimizationRequest request,
             CancellationToken cancellationToken = default)
         {
-            var po = await _getPriceOptimizationPolicy.ExecuteAsync(async () =>
+            var executionResult = await _getPriceOptimizationPolicy.ExecuteAsync(async () =>
             {
-                var cacheKey = $"{_cacheNamespace}.{request.DeviceId}.{request.ItemId}";
+                var cacheKey = GetPriceOptimizationCacheKey(request);
                 const string logNamespace = "@@PriceOptimizationsHandler.GetPriceOptimizationAsync@@";
-                
+
                 if (_logger.IsEnabled(LogLevel.Debug))
                 {
                     _logger.LogDebug("{0} fetching optimization [device: {1}, item: {2}]", logNamespace, request.DeviceId, request.ItemId);
@@ -91,7 +122,7 @@ namespace Spresso.Sdk.PriceOptimizations
                     }
 
                     var priceOptimization = CreatePriceOptimization(cachedPriceOptimization);
-                    return new GetPriceOptimizationsResponse(priceOptimization);
+                    return new GetPriceOptimizationResponse(priceOptimization);
                 }
 
                 if (_logger.IsEnabled(LogLevel.Debug))
@@ -107,7 +138,7 @@ namespace Spresso.Sdk.PriceOptimizations
                     {
                         _logger.LogError("{0} failed to get token", logNamespace);
                     }
-                    return new GetPriceOptimizationsResponse(PriceOptimizationError.AuthError);
+                    return new GetPriceOptimizationResponse(PriceOptimizationError.AuthError);
                 }
 
                 var token = tokenResponse.Token!;
@@ -122,9 +153,9 @@ namespace Spresso.Sdk.PriceOptimizations
                 {
                     query += $"&userId={request.UserId}";
                 }
-                if (!String.IsNullOrEmpty(_additionalParameters))
+                if (!string.IsNullOrEmpty(_additionalParameters))
                 {
-                    query += $"&{_additionalParameters}";   
+                    query += $"&{_additionalParameters}";
                 }
 
                 try
@@ -139,54 +170,219 @@ namespace Spresso.Sdk.PriceOptimizations
                         {
                             AbsoluteExpirationRelativeToNow = _cacheDuration
                         }, cancellationToken);
-                        return new GetPriceOptimizationsResponse(priceOptimization);
+                        return new GetPriceOptimizationResponse(priceOptimization);
                     }
 
                     switch (response.StatusCode)
                     {
                         case HttpStatusCode.Unauthorized:
                         case HttpStatusCode.Forbidden:
-                            return new GetPriceOptimizationsResponse(PriceOptimizationError.AuthError);
+                            return new GetPriceOptimizationResponse(PriceOptimizationError.AuthError);
                         case HttpStatusCode.BadRequest:
-                            return new GetPriceOptimizationsResponse(PriceOptimizationError.BadRequest);
+                            return new GetPriceOptimizationResponse(PriceOptimizationError.BadRequest);
                         default:
-                            return new GetPriceOptimizationsResponse(PriceOptimizationError.Unknown);
+                            return new GetPriceOptimizationResponse(PriceOptimizationError.Unknown);
                     }
                 }
                 catch (HttpRequestException e) when (e.Message.Contains("No connection could be made because the target machine actively refused it."))
                 {
-                    return new GetPriceOptimizationsResponse(PriceOptimizationError.Timeout);
+                    return new GetPriceOptimizationResponse(PriceOptimizationError.Timeout);
                 }
                 catch (OperationCanceledException e)
                 {
-                    return new GetPriceOptimizationsResponse(PriceOptimizationError.Timeout);
+                    return new GetPriceOptimizationResponse(PriceOptimizationError.Timeout);
                 }
                 catch (Exception e)
                 {
-                    return new GetPriceOptimizationsResponse(PriceOptimizationError.Unknown);
+                    return new GetPriceOptimizationResponse(PriceOptimizationError.Unknown);
                 }
             });
 
-            if (po.IsSuccess)
+            if (executionResult.IsSuccess)
             {
-                return po;
+                return executionResult;
             }
 
             // create a price optimization upon failure using the default price
-            return new GetPriceOptimizationsResponse(po.Error, new PriceOptimization
+            return new GetPriceOptimizationResponse(executionResult.Error, CreateDefaultPriceOptimization(request));
+        }
+
+        public async Task<GetBatchPriceOptimizationsResponse> GetBatchPriceOptimizationsAsync(GetBatchPriceOptimizationsRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            var executionResult = await _getPriceOptimizationsBatchPolicy.ExecuteAsync(async () =>
             {
-                UserId = request.UserId,
-                DeviceId = request.DeviceId,
-                ItemId = request.ItemId,
-                IsOptimizedPrice = false,
-                Price = request.DefaultPrice,
+
+                var poRequests = request.Requests.ToList();
+                var requestCount = poRequests.Count;
+
+                if (requestCount > MaxRequestSize)
+                {
+                    throw new ArgumentException($"Max batch size is {MaxRequestSize} requests");
+                }
+
+                const string logNamespace = "@@PriceOptimizationsHandler.GetBatchPriceOptimizationsResponse@@";
+
+                var responses = new PriceOptimization[requestCount];
+
+                var needApiCallIndexes = new List<int>(requestCount);
+
+                for (int i = 0; i < requestCount; i++)
+                {
+                    var poRequest = poRequests[i];
+
+                    if (_logger.IsEnabled(LogLevel.Debug))
+                    {
+                        _logger.LogDebug("{0} Checking cache for [device: {1}, item: {2}]", logNamespace, poRequest.DeviceId, poRequest.ItemId);
+                    }
+                    var cacheKey = GetPriceOptimizationCacheKey(poRequest);
+                    var cachedPriceOptimization = await _cache.GetStringAsync(cacheKey, cancellationToken);
+                    if (cachedPriceOptimization != null)
+                    {
+                        if (_logger.IsEnabled(LogLevel.Debug))
+                        {
+                            _logger.LogDebug("{0} cache hit [device: {1}, item: {2}]", logNamespace, poRequest.DeviceId, poRequest.ItemId);
+                        }
+
+                        responses[i] = CreatePriceOptimization(cachedPriceOptimization);
+                    }
+                    else
+                    {
+                        if (_logger.IsEnabled(LogLevel.Debug))
+                        {
+                            _logger.LogDebug("{0} cache miss [device: {1}, item: {2}]", logNamespace, poRequest.DeviceId, poRequest.ItemId);
+                        }
+
+                        needApiCallIndexes.Add(i);
+                    }
+                }
+                if (needApiCallIndexes.Any())
+                {
+                    var apiRequests = new List<GetPriceOptimizationRequest>(needApiCallIndexes.Count);
+
+                    needApiCallIndexes.ForEach(i =>
+                    {
+                        apiRequests.Add(poRequests[i]);
+                    });
+
+
+                    var tokenResponse = await _tokenHandler.GetTokenAsync(cancellationToken);
+
+                    if (!tokenResponse.IsSuccess)
+                    {
+                        if (_logger.IsEnabled(LogLevel.Error))
+                        {
+                            _logger.LogError("{0} failed to get token", logNamespace);
+                        }
+                        return new GetBatchPriceOptimizationsResponse(PriceOptimizationError.AuthError);
+                    }
+
+                    var token = tokenResponse.Token!;
+                    var httpClient = _httpClientFactory.GetClient();
+                    httpClient.BaseAddress = new Uri(_baseUrl);
+                    httpClient.Timeout = _httpTimeout;
+                    httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+                    var requestUri =
+                        $"/v1/priceOptimizations";
+                    if (!String.IsNullOrEmpty(_additionalParameters))
+                    {
+                        requestUri += $"?{_additionalParameters}";
+                    }
+
+                    var batchApiRequest = new
+                    {
+                        PricingRefs = apiRequests
+                    };
+                    var requestJson = JsonConvert.SerializeObject(batchApiRequest);
+
+                    try
+                    {
+                        var apiResponse = await httpClient.PostAsync(requestUri, new StringContent(requestJson, Encoding.UTF8, "application/json"),
+                            cancellationToken);
+
+                        if (apiResponse.IsSuccessStatusCode)
+                        {
+                            var apiBatchOptimizationsJson = await apiResponse.Content.ReadAsStringAsync();
+                            var apiBatchOptimizations = CreatePriceOptimizationArray(apiBatchOptimizationsJson);
+
+                            // assumption for this entire module is that order is preserved between api request and response
+                            int apiResponseIndex = 0;
+                            foreach (var i in needApiCallIndexes)
+                            {
+                                responses[i] = apiBatchOptimizations[apiResponseIndex++];
+                                var cacheKey = GetPriceOptimizationCacheKey(poRequests[i]);
+                                await _cache.SetStringAsync(cacheKey,
+                                    JsonConvert.SerializeObject(new GetPriceOptimizationApiResponse() { Data = responses[i] }),
+                                    new DistributedCacheEntryOptions
+                                    {
+                                        AbsoluteExpirationRelativeToNow = _cacheDuration
+                                    }, cancellationToken);
+                            }
+                        }
+                        else
+                        {
+                            switch (apiResponse.StatusCode)
+                            {
+                                case HttpStatusCode.Unauthorized:
+                                case HttpStatusCode.Forbidden:
+                                    return new GetBatchPriceOptimizationsResponse(PriceOptimizationError.AuthError);
+                                case HttpStatusCode.BadRequest:
+                                    return new GetBatchPriceOptimizationsResponse(PriceOptimizationError.BadRequest);
+                                default:
+                                    return new GetBatchPriceOptimizationsResponse(PriceOptimizationError.Unknown);
+                            }
+                        }
+
+
+                    }
+                    catch (HttpRequestException e) when (e.Message.Contains("No connection could be made because the target machine actively refused it."))
+                    {
+                        return new GetBatchPriceOptimizationsResponse(PriceOptimizationError.Timeout);
+                    }
+                    catch (OperationCanceledException e)
+                    {
+                        return new GetBatchPriceOptimizationsResponse(PriceOptimizationError.Timeout);
+                    }
+                    catch (Exception e)
+                    {
+                        return new GetBatchPriceOptimizationsResponse(PriceOptimizationError.Unknown);
+                    }
+
+                }
+                return new GetBatchPriceOptimizationsResponse(responses);
             });
+
+            if (executionResult.IsSuccess)
+            {
+                return executionResult;
+            }
+            
+            // todo: fallback price not cached, but note error may be because issue with cache.
+            return new GetBatchPriceOptimizationsResponse(executionResult.Error, request.Requests.Select(CreateDefaultPriceOptimization));
+
         }
         
-        private IAsyncPolicy<T> CreateResiliencyPolicy<T>(PriceOptimizationsHandlerOptions options, FallbackOptions<T> fallbackOptions, [CallerMemberName]string caller = default!) where T : IPriceOptimizationResult
+        private PriceOptimization CreateDefaultPriceOptimization(GetPriceOptimizationRequest request) => new PriceOptimization
+        {
+            UserId = request.UserId,
+            DeviceId = request.DeviceId,
+            ItemId = request.ItemId,
+            IsOptimizedPrice = false,
+            Price = request.DefaultPrice
+        };
+        
+        
+        private string GetPriceOptimizationCacheKey(GetPriceOptimizationRequest request)
+        {
+            var cacheKey = $"{_cacheNamespace}.{request.DeviceId}.{request.ItemId}";
+            return cacheKey;
+        }
+        
+        private IAsyncPolicy<T> CreateResiliencyPolicy<T>(PriceOptimizationsHandlerOptions options, FallbackOptions<T> fallbackOptions,
+            [CallerMemberName] string caller = default!) where T : IPriceOptimizationResult
         {
             var retryErrors = new[] { PriceOptimizationError.Timeout, PriceOptimizationError.Unknown };
-            return ResiliencyPolicyBuilder.BuildPolicy<T>(
+            return ResiliencyPolicyBuilder.BuildPolicy(
                 new RetryOptions<T>(r => !r.IsSuccess && retryErrors.Contains(r.Error), options.NumberOfRetries),
                 new TimeoutOptions(options.Timeout),
                 new CircuitBreakerOptions<T>(
@@ -205,13 +401,24 @@ namespace Spresso.Sdk.PriceOptimizations
 
         private PriceOptimization CreatePriceOptimization(string priceOptimizationJson)
         {
-            var apiResponse = JsonConvert.DeserializeObject<GetPriceOptimizationsApiResponse>(priceOptimizationJson)!;
+            var apiResponse = JsonConvert.DeserializeObject<GetPriceOptimizationApiResponse>(priceOptimizationJson)!;
             return apiResponse.Data;
         }
 
-        private class GetPriceOptimizationsApiResponse
+        private PriceOptimization[] CreatePriceOptimizationArray(string priceOptimizationJson)
+        {
+            var apiResponse = JsonConvert.DeserializeObject<GetBatchPriceOptimizationsApiResponse>(priceOptimizationJson)!;
+            return apiResponse.Data;
+        }
+
+        private class GetPriceOptimizationApiResponse
         {
             public PriceOptimization Data { get; set; }
+        }
+
+        private class GetBatchPriceOptimizationsApiResponse
+        {
+            public PriceOptimization[] Data { get; set; }
         }
     }
 }
