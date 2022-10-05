@@ -109,14 +109,16 @@ namespace Spresso.Sdk.PriceOptimizations
         public string? UserId { get; }
         public decimal DefaultPrice { get; }
         public bool OverrideToDefaultPrice { get; }
+        public string? UserAgent { get; }
 
-        public GetPriceOptimizationRequest(string deviceId, string itemId, decimal defaultPrice, string? userId = null, bool overrideToDefaultPrice = false)
+        public GetPriceOptimizationRequest(string deviceId, string itemId, decimal defaultPrice, string? userId = null, bool overrideToDefaultPrice = false, string? userAgent = default)
         {
             DeviceId = deviceId;
             ItemId = itemId;
-            DefaultPrice = defaultPrice;
             UserId = userId;
+            DefaultPrice = defaultPrice;
             OverrideToDefaultPrice = overrideToDefaultPrice;
+            UserAgent = userAgent;
         }
     }
 
@@ -124,10 +126,12 @@ namespace Spresso.Sdk.PriceOptimizations
     public readonly struct GetBatchPriceOptimizationsRequest
     {
         public IEnumerable<GetPriceOptimizationRequest> Requests { get; }
+        public string? UserAgent { get; }
 
-        public GetBatchPriceOptimizationsRequest(IEnumerable<GetPriceOptimizationRequest> requests)
+        public GetBatchPriceOptimizationsRequest(IEnumerable<GetPriceOptimizationRequest> requests, string? userAgent = default)
         {
             Requests = requests;
+            UserAgent = userAgent;
         }
     }
 

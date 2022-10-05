@@ -26,27 +26,27 @@ var redisCache = new RedisCache(new OptionsWrapper<RedisCacheOptions>(new RedisC
     });
 
 
-    var singleRequest = new GetPriceOptimizationRequest("123", "456", 8.95m);
+    var singleRequest = new GetPriceOptimizationRequest("123", "456", 8.95m, userAgent: "Mozilla/5.0 (X11; Linux x86_64; Storebot-Google/1.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36");
     var secondRequest = new GetPriceOptimizationRequest("123", "789", 18.95m);
-// var sw = Stopwatch.StartNew();
-// var response = await priceOptimizationHandler.GetPriceOptimizationAsync(singleRequest);
-// sw.Stop();
-// Console.WriteLine((response.PriceOptimization?.IsOptimizedPrice ?? false) + " " + sw.Elapsed.TotalSeconds);
-
-
-    // while (true)
-    // {
     // var sw = Stopwatch.StartNew();
-    //     var batchRequest = new GetBatchPriceOptimizationsRequest(new[] { singleRequest, secondRequest });
-    //
-    //     sw.Start();
-    //     var batchResponse = await priceOptimizationHandler.GetBatchPriceOptimizationsAsync(batchRequest);
-    //     sw.Stop();
-    //     Console.WriteLine(sw.Elapsed.TotalSeconds);
-    //     //Console.ReadKey();
-    // }
+    // var response = await priceOptimizationHandler.GetPriceOptimizationAsync(singleRequest);
+    // sw.Stop();
+    // Console.WriteLine((response.PriceOptimization?.IsOptimizedPrice ?? false) + " " + sw.Elapsed.TotalSeconds);
 
-    var overrides = await priceOptimizationHandler.GetPriceOptimizationsUserAgentOverridesAsync(default);
-    overrides = await priceOptimizationHandler.GetPriceOptimizationsUserAgentOverridesAsync(default);
+
+    while (true)
+    {
+    var sw = Stopwatch.StartNew();
+        var batchRequest = new GetBatchPriceOptimizationsRequest(new[] { singleRequest, secondRequest }, userAgent: "Mozilla/5.0 (X11; Linux x86_64; Storebot-Google/1.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36");
+    
+        sw.Start();
+        var batchResponse = await priceOptimizationHandler.GetBatchPriceOptimizationsAsync(batchRequest);
+        sw.Stop();
+        Console.WriteLine(sw.Elapsed.TotalSeconds);
+        //Console.ReadKey();
+    }
+
+    // var overrides = await priceOptimizationHandler.GetPriceOptimizationsUserAgentOverridesAsync(default);
+    // overrides = await priceOptimizationHandler.GetPriceOptimizationsUserAgentOverridesAsync(default);
 
 

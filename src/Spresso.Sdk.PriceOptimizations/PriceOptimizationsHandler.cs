@@ -133,6 +133,39 @@ namespace Spresso.Sdk.PriceOptimizations
                     _logger.LogDebug("{0} cache miss, calling api [device: {1}, item: {2}]", logNamespace, request.DeviceId, request.ItemId);
                 }
 
+                //todo: test, and repeat this for batch
+                if (!String.IsNullOrEmpty(request.UserAgent))
+                {
+                    var userAgentOverridesResponse = await GetPriceOptimizationsUserAgentOverridesAsync(cancellationToken);
+                    if (userAgentOverridesResponse.IsSuccess)
+                    {
+                        if (userAgentOverridesResponse.UserAgentRegexes.Any(regex => regex.IsMatch(request.UserAgent)))
+                        {
+                            if (_logger.IsEnabled(LogLevel.Debug))
+                            {
+                                _logger.LogDebug("{0} user agent override [device: {1}, item: {2}, user-agent: {3}].  Proceeding", logNamespace, request.DeviceId, request.ItemId, request.UserAgent);
+                            }
+                            return new GetPriceOptimizationResponse(new PriceOptimization
+                            {
+                                UserId = request.UserId,
+                                DeviceId = request.DeviceId,
+                                ItemId = request.ItemId,
+                                IsOptimizedPrice = false,
+                                Price = request.DefaultPrice,
+                            });
+                        }
+                    }
+                    else
+                    {
+                        if (_logger.IsEnabled(LogLevel.Warning))
+                        {
+                            _logger.LogWarning("{0} failed to get user agent overrides [device: {1}, item: {2}].  Proceeding", logNamespace, request.DeviceId, request.ItemId);
+                        }
+
+                    }
+                }
+               
+                
                 var tokenResponse = await GetTokenAsync(logNamespace, e => new GetPriceOptimizationResponse(e), cancellationToken);
                 if (!tokenResponse.IsSuccess)
                 {
@@ -186,6 +219,37 @@ namespace Spresso.Sdk.PriceOptimizations
                 }
 
                 const string logNamespace = "@@PriceOptimizationsHandler.GetBatchPriceOptimizationsAsync@@";
+
+                if (!String.IsNullOrEmpty(request.UserAgent))
+                {
+                    var userAgentOverridesResponse = await GetPriceOptimizationsUserAgentOverridesAsync(cancellationToken);
+                    if (userAgentOverridesResponse.IsSuccess)
+                    {
+                        if (userAgentOverridesResponse.UserAgentRegexes.Any(regex => regex.IsMatch(request.UserAgent)))
+                        {
+                            if (_logger.IsEnabled(LogLevel.Debug))
+                            {
+                                _logger.LogDebug("{0} user agent override [user-agent: {1}].  Proceeding", logNamespace, request.UserAgent);
+                            }
+                            return new GetBatchPriceOptimizationsResponse(request.Requests.Select(request => new PriceOptimization
+                            {
+                                UserId = request.UserId,
+                                DeviceId = request.DeviceId,
+                                ItemId = request.ItemId,
+                                IsOptimizedPrice = false,
+                                Price = request.DefaultPrice,
+                            }));
+
+                        }
+                    }
+                    else
+                    {
+                        if (_logger.IsEnabled(LogLevel.Warning))
+                        {
+                            _logger.LogWarning("{0} failed to get user agent overrides", logNamespace);
+                        }
+                    }
+                }
 
                 var responses = new PriceOptimization[requestCount];
 
@@ -309,7 +373,7 @@ namespace Spresso.Sdk.PriceOptimizations
                 var compiledRegexes = apiResponse.Data.Select(r => new Regex(r.Regex, RegexOptions.Singleline | RegexOptions.Compiled)).ToArray();
                
                 var getPriceOptimizationsUserAgentOverridesResponse = new GetPriceOptimizationsUserAgentOverridesResponse(compiledRegexes);
-                _localCache.Set(cacheKey, getPriceOptimizationsUserAgentOverridesResponse);
+                _localCache.Set(cacheKey, getPriceOptimizationsUserAgentOverridesResponse, _cacheDuration);
                 return Task.FromResult(getPriceOptimizationsUserAgentOverridesResponse);
             }, e => new GetPriceOptimizationsUserAgentOverridesResponse(e), cancellationToken);
         }
