@@ -82,9 +82,9 @@ namespace Spresso.MockApi.Controllers ;
         [HttpGet("userAgents")]
         public async Task<IActionResult> GetUserAgents(CancellationToken cancellationToken = default)
         {
-            var userAgents = new UserAgentRegex[]
+            var userAgents = new[]
             {
-                new UserAgentRegex("Googlebot", "Googlebot+"),
+                new("Googlebot", "Googlebot+"),
                 new UserAgentRegex("Storebot-Google", "Storebot-Google+")
             };
 

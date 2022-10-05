@@ -65,7 +65,8 @@ namespace Spresso.Sdk.Core.Resiliency
     public static class ResiliencyPolicyBuilder
     {
         /// <summary>
-        ///     Creates a policy that retries a configurable number of times, times out after a set duration, and trips a circuit breaker after a set number of failures.  This override will bubble up exceptions
+        ///     Creates a policy that retries a configurable number of times, times out after a set duration, and trips a circuit
+        ///     breaker after a set number of failures.  This override will bubble up exceptions
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="retryOptions"></param>
@@ -88,7 +89,8 @@ namespace Spresso.Sdk.Core.Resiliency
         }
 
         /// <summary>
-        ///     Creates a policy that retries a configurable number of times, times out after a set duration, and trips a circuit breaker after a set number of failures.  This override will will execute a fallback policy upon error
+        ///     Creates a policy that retries a configurable number of times, times out after a set duration, and trips a circuit
+        ///     breaker after a set number of failures.  This override will will execute a fallback policy upon error
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="retryOptions"></param>

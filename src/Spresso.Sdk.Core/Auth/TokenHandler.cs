@@ -11,7 +11,6 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Polly;
 using Polly.Timeout;
-using Polly.Wrap;
 using Spresso.Sdk.Core.Connectivity;
 using Spresso.Sdk.Core.Resiliency;
 
@@ -73,23 +72,15 @@ namespace Spresso.Sdk.Core.Auth
                 new CircuitBreakerOptions<TokenResponse>(t => !t.IsSuccess && retryErrors.Contains(t.Error),
                     options.NumberOfFailuresBeforeTrippingCircuitBreaker,
                     options.CircuitBreakerBreakDuration,
-                    (state, ts, ctx) =>
-                    {
-                        _logger.LogError("Token circuit breaker tripped");
-
-                    },
-                    ctx =>
-                    {
-                        _logger.LogInformation("Token circuit breaker reset");
-
-                    }),
-                new FallbackOptions<TokenResponse>( 
+                    (state, ts, ctx) => { _logger.LogError("Token circuit breaker tripped"); },
+                    ctx => { _logger.LogInformation("Token circuit breaker reset"); }),
+                new FallbackOptions<TokenResponse>(
                     r => !r.IsSuccess,
                     (tokenResponse, ctx, cancellationToken) =>
                     {
-                     
-                        _logger.LogError("Token request failed.  Error {0}.  Exception (if applicable): {1}", tokenResponse?.Result.Error, tokenResponse?.Exception?.Message);
-                        
+                        _logger.LogError("Token request failed.  Error {0}.  Exception (if applicable): {1}", tokenResponse?.Result.Error,
+                            tokenResponse?.Exception?.Message);
+
                         if (tokenResponse.Exception != null)
                         {
                             if (tokenResponse.Exception is TimeoutRejectedException)
@@ -98,12 +89,11 @@ namespace Spresso.Sdk.Core.Auth
                             }
                             return Task.FromResult(new TokenResponse(AuthError.Unknown));
                         }
-                
+
                         return Task.FromResult(tokenResponse.Result);
                     },
                     (result, context) => Task.CompletedTask)
                 );
-            
         }
 
         /// <summary>
@@ -127,15 +117,15 @@ namespace Spresso.Sdk.Core.Auth
                     httpClient.BaseAddress = new Uri(_spressoBaseAuthUrl);
                     httpClient.Timeout = _httpTimeout;
 
-                    
-                     _logger.LogDebug("@@{0}@@ Fetching token", nameof(GetTokenAsync));
-                    
-                       
+
+                    _logger.LogDebug("@@{0}@@ Fetching token", nameof(GetTokenAsync));
+
+
                     var response = await httpClient.PostAsync(_tokenEndpoint, new StringContent(_tokenRequest, Encoding.UTF8, "application/json"),
                         cancellationToken);
-             
+
                     _logger.LogDebug("@@{0}@@ Token status code {1}", nameof(GetTokenAsync), response.StatusCode);
-                    
+
                     if (response.IsSuccessStatusCode)
                     {
                         auth0TokenResponseJson = await response.Content.ReadAsStringAsync();

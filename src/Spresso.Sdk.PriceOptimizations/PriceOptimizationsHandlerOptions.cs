@@ -11,9 +11,9 @@ namespace Spresso.Sdk.PriceOptimizations
     public class PriceOptimizationsHandlerOptions
     {
         private const string DefaultSpressoBaseUrl = "https://api.spresso.com";
+        private int _numberOfFailuresBeforeTrippingCircuitBreaker = 100;
         private int _numberOfRetries;
         private TimeSpan _timeout = new TimeSpan(0, 0, 0, 10);
-        private int _numberOfFailuresBeforeTrippingCircuitBreaker = 100;
 
         /// <summary>
         ///     For caching price optimizations

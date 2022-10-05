@@ -18,7 +18,6 @@ namespace Spresso.Sdk.PriceOptimizations
 
     public readonly struct GetPriceOptimizationsUserAgentOverridesResponse : IPriceOptimizationResult
     {
-        
         public Regex[] UserAgentRegexes { get; }
         public bool IsSuccess => Error == PriceOptimizationError.None;
         public PriceOptimizationError Error { get; }
@@ -79,12 +78,13 @@ namespace Spresso.Sdk.PriceOptimizations
             PriceOptimizations = priceOptimizations;
             Error = PriceOptimizationError.None;
         }
-      
+
         public GetBatchPriceOptimizationsResponse(PriceOptimizationError error)
         {
             PriceOptimizations = Array.Empty<PriceOptimization>();
             Error = error;
         }
+
         public GetBatchPriceOptimizationsResponse(PriceOptimizationError error, IEnumerable<PriceOptimization> priceOptimizations)
         {
             PriceOptimizations = priceOptimizations;
@@ -111,7 +111,8 @@ namespace Spresso.Sdk.PriceOptimizations
         public bool OverrideToDefaultPrice { get; }
         public string? UserAgent { get; }
 
-        public GetPriceOptimizationRequest(string deviceId, string itemId, decimal defaultPrice, string? userId = null, bool overrideToDefaultPrice = false, string? userAgent = default)
+        public GetPriceOptimizationRequest(string deviceId, string itemId, decimal defaultPrice, string? userId = null, bool overrideToDefaultPrice = false,
+            string? userAgent = default)
         {
             DeviceId = deviceId;
             ItemId = itemId;

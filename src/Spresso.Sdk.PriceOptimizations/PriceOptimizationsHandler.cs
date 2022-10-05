@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -57,10 +56,9 @@ namespace Spresso.Sdk.PriceOptimizations
                     r => !r.IsSuccess,
                     (response, ctx, ct) =>
                     {
-                        
                         _logger.LogError("@@{0}@@ Token request failed.  Error {1}.  Exception (if applicable): {2}",
-                                nameof(GetPriceOptimizationAsync), response?.Result.Error, response?.Exception?.Message);
-                        
+                            nameof(GetPriceOptimizationAsync), response?.Result.Error, response?.Exception?.Message);
+
                         if (response!.Exception != null)
                         {
                             if (response.Exception is TimeoutRejectedException)
@@ -80,10 +78,9 @@ namespace Spresso.Sdk.PriceOptimizations
                     r => !r.IsSuccess,
                     (response, ctx, ct) =>
                     {
-                        
-                        _logger.LogError("@@{0}@@ Token request failed.  Error {1}.  Exception (if applicable): {2}", 
-                                nameof(GetBatchPriceOptimizationsAsync), response?.Result.Error, response?.Exception?.Message);
-                        
+                        _logger.LogError("@@{0}@@ Token request failed.  Error {1}.  Exception (if applicable): {2}",
+                            nameof(GetBatchPriceOptimizationsAsync), response?.Result.Error, response?.Exception?.Message);
+
                         if (response!.Exception != null)
                         {
                             if (response.Exception is TimeoutRejectedException)
@@ -109,58 +106,57 @@ namespace Spresso.Sdk.PriceOptimizations
             var executionResult = await _getPriceOptimizationPolicy.ExecuteAsync(async () =>
             {
                 var cacheKey = GetPriceOptimizationCacheKey(request);
-                
+
                 _logger.LogDebug("{0} fetching optimization [device: {1}, item: {2}]", logNamespace, request.DeviceId, request.ItemId);
-                
+
 
                 var cachedPriceOptimization = await _distributedCache.GetStringAsync(cacheKey, cancellationToken);
                 if (cachedPriceOptimization != null)
                 {
-                    
                     _logger.LogDebug("{0} cache hit [device: {1}, item: {2}]", logNamespace, request.DeviceId, request.ItemId);
-                    
+
                     var priceOptimization = CreatePriceOptimization(cachedPriceOptimization);
                     return new GetPriceOptimizationResponse(priceOptimization);
                 }
 
-                
-                _logger.LogDebug("{0} cache miss, calling api [device: {1}, item: {2}]", logNamespace, request.DeviceId, request.ItemId);
-                
 
-                if (!String.IsNullOrEmpty(request.UserAgent))
+                _logger.LogDebug("{0} cache miss, calling api [device: {1}, item: {2}]", logNamespace, request.DeviceId, request.ItemId);
+
+
+                if (!string.IsNullOrEmpty(request.UserAgent))
                 {
                     var userAgentOverridesResponse = await GetPriceOptimizationsUserAgentOverridesAsync(cancellationToken);
                     if (userAgentOverridesResponse.IsSuccess)
                     {
                         if (userAgentOverridesResponse.UserAgentRegexes.Any(regex => regex.IsMatch(request.UserAgent)))
                         {
-                            
-                            _logger.LogDebug("{0} user agent override [device: {1}, item: {2}, user-agent: {3}].  Proceeding", logNamespace, request.DeviceId, request.ItemId, request.UserAgent);
-                            
+                            _logger.LogDebug("{0} user agent override [device: {1}, item: {2}, user-agent: {3}].  Proceeding", logNamespace, request.DeviceId,
+                                request.ItemId, request.UserAgent);
+
                             return new GetPriceOptimizationResponse(new PriceOptimization
                             {
                                 UserId = request.UserId,
                                 DeviceId = request.DeviceId,
                                 ItemId = request.ItemId,
                                 IsOptimizedPrice = false,
-                                Price = request.DefaultPrice,
+                                Price = request.DefaultPrice
                             });
                         }
                     }
                     else
                     {
-                        _logger.LogWarning("{0} failed to get user agent overrides [device: {1}, item: {2}].  Proceeding", logNamespace, request.DeviceId, request.ItemId);
-                        
+                        _logger.LogWarning("{0} failed to get user agent overrides [device: {1}, item: {2}].  Proceeding", logNamespace, request.DeviceId,
+                            request.ItemId);
                     }
                 }
-               
-                
+
+
                 var tokenResponse = await GetTokenAsync(logNamespace, e => new GetPriceOptimizationResponse(e), cancellationToken);
                 if (!tokenResponse.IsSuccess)
                 {
                     return tokenResponse.ErrorResponse;
                 }
-                
+
                 var token = tokenResponse.Token!;
 
                 var httpClient = GetHttpClient(token);
@@ -190,13 +186,15 @@ namespace Spresso.Sdk.PriceOptimizations
 
             if (executionResult.IsSuccess)
             {
-                _logger.LogDebug("{0} found result [device: {1}, item: {2}]", logNamespace, executionResult.PriceOptimization!.Value.DeviceId, executionResult.PriceOptimization!.Value.ItemId);
+                _logger.LogDebug("{0} found result [device: {1}, item: {2}]", logNamespace, executionResult.PriceOptimization!.Value.DeviceId,
+                    executionResult.PriceOptimization!.Value.ItemId);
                 return executionResult;
             }
 
             // create a price optimization upon failure using the default price
             var defaultPriceOptimization = CreateDefaultPriceOptimization(request);
-            _logger.LogDebug("{0} failed getting price optimization. using fallback [device: {1}, item: {2}]", logNamespace, defaultPriceOptimization.DeviceId, defaultPriceOptimization.ItemId);
+            _logger.LogDebug("{0} failed getting price optimization. using fallback [device: {1}, item: {2}]", logNamespace, defaultPriceOptimization.DeviceId,
+                defaultPriceOptimization.ItemId);
             return new GetPriceOptimizationResponse(executionResult.Error, defaultPriceOptimization);
         }
 
@@ -215,25 +213,23 @@ namespace Spresso.Sdk.PriceOptimizations
                     throw new ArgumentException($"Max batch size is {MaxRequestSize} requests");
                 }
 
-                if (!String.IsNullOrEmpty(request.UserAgent))
+                if (!string.IsNullOrEmpty(request.UserAgent))
                 {
                     var userAgentOverridesResponse = await GetPriceOptimizationsUserAgentOverridesAsync(cancellationToken);
                     if (userAgentOverridesResponse.IsSuccess)
                     {
                         if (userAgentOverridesResponse.UserAgentRegexes.Any(regex => regex.IsMatch(request.UserAgent)))
                         {
-                            
                             _logger.LogDebug("{0} user agent override [user-agent: {1}].  Proceeding", logNamespace, request.UserAgent);
-                            
+
                             return new GetBatchPriceOptimizationsResponse(request.Requests.Select(request => new PriceOptimization
                             {
                                 UserId = request.UserId,
                                 DeviceId = request.DeviceId,
                                 ItemId = request.ItemId,
                                 IsOptimizedPrice = false,
-                                Price = request.DefaultPrice,
+                                Price = request.DefaultPrice
                             }));
-
                         }
                     }
                     else
@@ -251,7 +247,7 @@ namespace Spresso.Sdk.PriceOptimizations
                     var poRequest = poRequests[i];
 
                     _logger.LogDebug("{0} Checking cache for [device: {1}, item: {2}]", logNamespace, poRequest.DeviceId, poRequest.ItemId);
-                    
+
                     var cacheKey = GetPriceOptimizationCacheKey(poRequest);
                     var cachedPriceOptimization = await _distributedCache.GetStringAsync(cacheKey, cancellationToken);
                     if (cachedPriceOptimization != null)
@@ -272,7 +268,7 @@ namespace Spresso.Sdk.PriceOptimizations
                     needApiCallIndexes.ForEach(i => { apiRequests.Add(poRequests[i]); });
 
                     var tokenResponse = await GetTokenAsync(logNamespace, e => new GetBatchPriceOptimizationsResponse(e), cancellationToken);
-                   
+
                     if (!tokenResponse.IsSuccess)
                     {
                         return tokenResponse.ErrorResponse;
@@ -280,7 +276,7 @@ namespace Spresso.Sdk.PriceOptimizations
 
                     var token = tokenResponse.Token!;
                     var httpClient = GetHttpClient(token);
-                    
+
                     var requestUri =
                         "/v1/priceOptimizations";
                     if (!string.IsNullOrEmpty(_additionalParameters))
@@ -313,7 +309,6 @@ namespace Spresso.Sdk.PriceOptimizations
                         }
                         return new GetBatchPriceOptimizationsResponse(responses);
                     }, e => new GetBatchPriceOptimizationsResponse(e), cancellationToken);
-                    
                 }
                 return new GetBatchPriceOptimizationsResponse(responses);
             });
@@ -354,7 +349,7 @@ namespace Spresso.Sdk.PriceOptimizations
             {
                 var apiResponse = CreateUserAgentRegexes(jsonResponse);
                 var compiledRegexes = apiResponse.Data.Select(r => new Regex(r.Regex, RegexOptions.Singleline | RegexOptions.Compiled)).ToArray();
-               
+
                 var getPriceOptimizationsUserAgentOverridesResponse = new GetPriceOptimizationsUserAgentOverridesResponse(compiledRegexes);
                 _localCache.Set(cacheKey, getPriceOptimizationsUserAgentOverridesResponse, _cacheDuration);
                 return Task.FromResult(getPriceOptimizationsUserAgentOverridesResponse);
@@ -366,7 +361,8 @@ namespace Spresso.Sdk.PriceOptimizations
             return JsonConvert.DeserializeObject<GetUserAgentRegexesApiResponse>(jsonResponse);
         }
 
-        private async Task<T> ExecutePostApiRequestAsync<T>(HttpClient httpClient, string requestUri, string requestJson, Func<string,Task<T>> onSuccessFunc, Func<PriceOptimizationError,T> onFailureFunc, CancellationToken cancellationToken)
+        private async Task<T> ExecutePostApiRequestAsync<T>(HttpClient httpClient, string requestUri, string requestJson, Func<string, Task<T>> onSuccessFunc,
+            Func<PriceOptimizationError, T> onFailureFunc, CancellationToken cancellationToken)
         {
             try
             {
@@ -378,18 +374,15 @@ namespace Spresso.Sdk.PriceOptimizations
                     var json = await apiResponse.Content.ReadAsStringAsync();
                     return await onSuccessFunc(json);
                 }
-                else
+                switch (apiResponse.StatusCode)
                 {
-                    switch (apiResponse.StatusCode)
-                    {
-                        case HttpStatusCode.Unauthorized:
-                        case HttpStatusCode.Forbidden:
-                            return onFailureFunc(PriceOptimizationError.AuthError);
-                        case HttpStatusCode.BadRequest:
-                            return onFailureFunc(PriceOptimizationError.BadRequest);
-                        default:
-                            return onFailureFunc(PriceOptimizationError.Unknown);
-                    }
+                    case HttpStatusCode.Unauthorized:
+                    case HttpStatusCode.Forbidden:
+                        return onFailureFunc(PriceOptimizationError.AuthError);
+                    case HttpStatusCode.BadRequest:
+                        return onFailureFunc(PriceOptimizationError.BadRequest);
+                    default:
+                        return onFailureFunc(PriceOptimizationError.Unknown);
                 }
             }
             catch (HttpRequestException e) when (e.Message.Contains("No connection could be made because the target machine actively refused it."))
@@ -406,29 +399,27 @@ namespace Spresso.Sdk.PriceOptimizations
             }
         }
 
-        private async Task<T> ExecuteGetApiRequestAsync<T>(HttpClient httpClient, string requestUri, Func<string, Task<T>> onSuccessFunc, Func<PriceOptimizationError, T> onFailureFunc, CancellationToken cancellationToken)
+        private async Task<T> ExecuteGetApiRequestAsync<T>(HttpClient httpClient, string requestUri, Func<string, Task<T>> onSuccessFunc,
+            Func<PriceOptimizationError, T> onFailureFunc, CancellationToken cancellationToken)
         {
             try
             {
                 var apiResponse = await httpClient.GetAsync(requestUri, cancellationToken);
-                    
+
                 if (apiResponse.IsSuccessStatusCode)
                 {
                     var json = await apiResponse.Content.ReadAsStringAsync();
                     return await onSuccessFunc(json);
                 }
-                else
+                switch (apiResponse.StatusCode)
                 {
-                    switch (apiResponse.StatusCode)
-                    {
-                        case HttpStatusCode.Unauthorized:
-                        case HttpStatusCode.Forbidden:
-                            return onFailureFunc(PriceOptimizationError.AuthError);
-                        case HttpStatusCode.BadRequest:
-                            return onFailureFunc(PriceOptimizationError.BadRequest);
-                        default:
-                            return onFailureFunc(PriceOptimizationError.Unknown);
-                    }
+                    case HttpStatusCode.Unauthorized:
+                    case HttpStatusCode.Forbidden:
+                        return onFailureFunc(PriceOptimizationError.AuthError);
+                    case HttpStatusCode.BadRequest:
+                        return onFailureFunc(PriceOptimizationError.BadRequest);
+                    default:
+                        return onFailureFunc(PriceOptimizationError.Unknown);
                 }
             }
             catch (HttpRequestException e) when (e.Message.Contains("No connection could be made because the target machine actively refused it."))
@@ -454,7 +445,7 @@ namespace Spresso.Sdk.PriceOptimizations
             httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
             return httpClient;
         }
-        
+
         private async Task<(bool IsSuccess, string? Token, T ErrorResponse)> GetTokenAsync<T>(string logNamespace,
             Func<PriceOptimizationError, T> failureResponseFunc, CancellationToken cancellationToken)
         {
@@ -462,9 +453,8 @@ namespace Spresso.Sdk.PriceOptimizations
 
             if (!tokenResponse.IsSuccess)
             {
-                
                 _logger.LogError("{0} failed to get token", logNamespace);
-                
+
                 return (false, null, failureResponseFunc(PriceOptimizationError.AuthError));
             }
 
@@ -527,7 +517,7 @@ namespace Spresso.Sdk.PriceOptimizations
         {
             public PriceOptimization Data { get; set; }
         }
-        
+
         private struct GetBatchPriceOptimizationsApiResponse
         {
             public PriceOptimization[] Data { get; set; }
