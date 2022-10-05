@@ -50,53 +50,9 @@ namespace Spresso.Sdk.PriceOptimizations
             _httpTimeout = options.HttpTimeout;
             _cacheDuration = options.CacheDuration;
             _additionalParameters = options.AdditionalParameters;
-
-            _getPriceOptimizationPolicy = CreateResiliencyPolicy(options,
-                new FallbackOptions<GetPriceOptimizationResponse>(
-                    r => !r.IsSuccess,
-                    (response, ctx, ct) =>
-                    {
-                        _logger.LogError("@@{0}@@ Token request failed.  Error {1}.  Exception (if applicable): {2}",
-                            nameof(GetPriceOptimizationAsync), response?.Result.Error, response?.Exception?.Message);
-
-                        if (response!.Exception != null)
-                        {
-                            if (response.Exception is TimeoutRejectedException)
-                            {
-                                return Task.FromResult(new GetPriceOptimizationResponse(PriceOptimizationError.Timeout));
-                            }
-                            return Task.FromResult(new GetPriceOptimizationResponse(PriceOptimizationError.Unknown));
-                        }
-
-                        return Task.FromResult(response.Result);
-                    },
-                    (result, context) => Task.CompletedTask
-                    ), nameof(GetPriceOptimizationAsync));
-
-            _getPriceOptimizationsBatchPolicy = CreateResiliencyPolicy(options,
-                new FallbackOptions<GetBatchPriceOptimizationsResponse>(
-                    r => !r.IsSuccess,
-                    (response, ctx, ct) =>
-                    {
-                        _logger.LogError("@@{0}@@ Token request failed.  Error {1}.  Exception (if applicable): {2}",
-                            nameof(GetBatchPriceOptimizationsAsync), response?.Result.Error, response?.Exception?.Message);
-
-                        if (response!.Exception != null)
-                        {
-                            if (response.Exception is TimeoutRejectedException)
-                            {
-                                return Task.FromResult(new GetBatchPriceOptimizationsResponse(PriceOptimizationError.Timeout));
-                            }
-                            return Task.FromResult(new GetBatchPriceOptimizationsResponse(PriceOptimizationError.Unknown));
-                        }
-
-                        return Task.FromResult(response.Result);
-                    },
-                    (result, context) => Task.CompletedTask
-                    ), nameof(GetBatchPriceOptimizationsAsync));
+            _getPriceOptimizationPolicy = CreatePriceOptimizationResiliencyPolicy(options);
+            _getPriceOptimizationsBatchPolicy = GetPriceOptimizationsBatchResiliencyPolicy(options);
         }
-
-        //todo: paging
 
         public async Task<GetPriceOptimizationResponse> GetPriceOptimizationAsync(GetPriceOptimizationRequest request,
             CancellationToken cancellationToken = default)
@@ -354,6 +310,56 @@ namespace Spresso.Sdk.PriceOptimizations
                 _localCache.Set(cacheKey, getPriceOptimizationsUserAgentOverridesResponse, _cacheDuration);
                 return Task.FromResult(getPriceOptimizationsUserAgentOverridesResponse);
             }, e => new GetPriceOptimizationsUserAgentOverridesResponse(e), cancellationToken);
+        }
+
+        private IAsyncPolicy<GetBatchPriceOptimizationsResponse> GetPriceOptimizationsBatchResiliencyPolicy(PriceOptimizationsHandlerOptions options)
+        {
+            return CreateResiliencyPolicy(options,
+                new FallbackOptions<GetBatchPriceOptimizationsResponse>(
+                    r => !r.IsSuccess,
+                    (response, ctx, ct) =>
+                    {
+                        _logger.LogError("@@{0}@@ Token request failed.  Error {1}.  Exception (if applicable): {2}",
+                            nameof(GetBatchPriceOptimizationsAsync), response?.Result.Error, response?.Exception?.Message);
+
+                        if (response!.Exception != null)
+                        {
+                            if (response.Exception is TimeoutRejectedException)
+                            {
+                                return Task.FromResult(new GetBatchPriceOptimizationsResponse(PriceOptimizationError.Timeout));
+                            }
+                            return Task.FromResult(new GetBatchPriceOptimizationsResponse(PriceOptimizationError.Unknown));
+                        }
+
+                        return Task.FromResult(response.Result);
+                    },
+                    (result, context) => Task.CompletedTask
+                    ), nameof(GetBatchPriceOptimizationsAsync));
+        }
+
+        private IAsyncPolicy<GetPriceOptimizationResponse> CreatePriceOptimizationResiliencyPolicy(PriceOptimizationsHandlerOptions options)
+        {
+            return CreateResiliencyPolicy(options,
+                new FallbackOptions<GetPriceOptimizationResponse>(
+                    r => !r.IsSuccess,
+                    (response, ctx, ct) =>
+                    {
+                        _logger.LogError("@@{0}@@ Token request failed.  Error {1}.  Exception (if applicable): {2}",
+                            nameof(GetPriceOptimizationAsync), response?.Result.Error, response?.Exception?.Message);
+
+                        if (response!.Exception != null)
+                        {
+                            if (response.Exception is TimeoutRejectedException)
+                            {
+                                return Task.FromResult(new GetPriceOptimizationResponse(PriceOptimizationError.Timeout));
+                            }
+                            return Task.FromResult(new GetPriceOptimizationResponse(PriceOptimizationError.Unknown));
+                        }
+
+                        return Task.FromResult(response.Result);
+                    },
+                    (result, context) => Task.CompletedTask
+                    ), nameof(GetPriceOptimizationAsync));
         }
 
         private GetUserAgentRegexesApiResponse CreateUserAgentRegexes(string jsonResponse)
