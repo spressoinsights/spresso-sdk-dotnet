@@ -22,7 +22,7 @@ namespace Spresso.Sdk.Core.Auth
         private readonly IDistributedCache _cache;
         private readonly SpressoHttpClientFactory _httpClientFactory;
         private readonly TimeSpan _httpTimeout;
-        private readonly ILogger<ITokenHandler>? _logger;
+        private readonly ILogger<ITokenHandler> _logger;
         private readonly string _spressoBaseAuthUrl;
         private readonly string _tokenCacheKey;
         private readonly string _tokenEndpoint;
@@ -75,22 +75,21 @@ namespace Spresso.Sdk.Core.Auth
                     options.CircuitBreakerBreakDuration,
                     (state, ts, ctx) =>
                     {
-                        _logger.LogError("@@TokenHandler@@ Token circuit breaker tripped");
+                        _logger.LogError("Token circuit breaker tripped");
 
                     },
                     ctx =>
                     {
-                        _logger.LogInformation("@@TokenHandler@@ Token circuit breaker reset");
+                        _logger.LogInformation("Token circuit breaker reset");
 
                     }),
                 new FallbackOptions<TokenResponse>( 
                     r => !r.IsSuccess,
                     (tokenResponse, ctx, cancellationToken) =>
                     {
-                        if (_logger!.IsEnabled(LogLevel.Error))
-                        {
-                            _logger.LogError("@@TokenHandler@@ Token request failed.  Error {0}.  Exception (if applicable): {1}", tokenResponse?.Result.Error, tokenResponse?.Exception?.Message);
-                        }
+                     
+                        _logger.LogError("Token request failed.  Error {0}.  Exception (if applicable): {1}", tokenResponse?.Result.Error, tokenResponse?.Exception?.Message);
+                        
                         if (tokenResponse.Exception != null)
                         {
                             if (tokenResponse.Exception is TimeoutRejectedException)
@@ -127,14 +126,16 @@ namespace Spresso.Sdk.Core.Auth
                     var httpClient = _httpClientFactory.GetClient();
                     httpClient.BaseAddress = new Uri(_spressoBaseAuthUrl);
                     httpClient.Timeout = _httpTimeout;
+
                     
-                    _logger!.LogDebug("@@TokenHandler.GetTokenAsync@@ Fetching token");
+                     _logger.LogDebug("@@{0}@@ Fetching token", nameof(GetTokenAsync));
+                    
+                       
                     var response = await httpClient.PostAsync(_tokenEndpoint, new StringContent(_tokenRequest, Encoding.UTF8, "application/json"),
                         cancellationToken);
-                    if (_logger!.IsEnabled(LogLevel.Debug))
-                    {
-                        _logger.LogDebug("@@TokenHandler.GetTokenAsync@@ Token status code {0}", response.StatusCode);
-                    }
+             
+                    _logger.LogDebug("@@{0}@@ Token status code {1}", nameof(GetTokenAsync), response.StatusCode);
+                    
                     if (response.IsSuccessStatusCode)
                     {
                         auth0TokenResponseJson = await response.Content.ReadAsStringAsync();

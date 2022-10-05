@@ -57,11 +57,10 @@ namespace Spresso.Sdk.PriceOptimizations
                     r => !r.IsSuccess,
                     (response, ctx, ct) =>
                     {
-                        if (_logger!.IsEnabled(LogLevel.Error))
-                        {
-                            _logger.LogError("@@{0}.{1}@@ Token request failed.  Error {2}.  Exception (if applicable): {3}", nameof(PriceOptimizationsHandler),
+                        
+                        _logger.LogError("@@{0}@@ Token request failed.  Error {1}.  Exception (if applicable): {2}",
                                 nameof(GetPriceOptimizationAsync), response?.Result.Error, response?.Exception?.Message);
-                        }
+                        
                         if (response!.Exception != null)
                         {
                             if (response.Exception is TimeoutRejectedException)
@@ -81,11 +80,10 @@ namespace Spresso.Sdk.PriceOptimizations
                     r => !r.IsSuccess,
                     (response, ctx, ct) =>
                     {
-                        if (_logger!.IsEnabled(LogLevel.Error))
-                        {
-                            _logger.LogError("@@{0}.{1}@@ Token request failed.  Error {2}.  Exception (if applicable): {3}", nameof(PriceOptimizationsHandler),
+                        
+                        _logger.LogError("@@{0}@@ Token request failed.  Error {1}.  Exception (if applicable): {2}", 
                                 nameof(GetBatchPriceOptimizationsAsync), response?.Result.Error, response?.Exception?.Message);
-                        }
+                        
                         if (response!.Exception != null)
                         {
                             if (response.Exception is TimeoutRejectedException)
@@ -106,34 +104,29 @@ namespace Spresso.Sdk.PriceOptimizations
         public async Task<GetPriceOptimizationResponse> GetPriceOptimizationAsync(GetPriceOptimizationRequest request,
             CancellationToken cancellationToken = default)
         {
+            const string logNamespace = "@@GetPriceOptimizationAsync@@";
+
             var executionResult = await _getPriceOptimizationPolicy.ExecuteAsync(async () =>
             {
                 var cacheKey = GetPriceOptimizationCacheKey(request);
-                const string logNamespace = "@@PriceOptimizationsHandler.GetPriceOptimizationAsync@@";
-
-                if (_logger.IsEnabled(LogLevel.Debug))
-                {
-                    _logger.LogDebug("{0} fetching optimization [device: {1}, item: {2}]", logNamespace, request.DeviceId, request.ItemId);
-                }
+                
+                _logger.LogDebug("{0} fetching optimization [device: {1}, item: {2}]", logNamespace, request.DeviceId, request.ItemId);
+                
 
                 var cachedPriceOptimization = await _distributedCache.GetStringAsync(cacheKey, cancellationToken);
                 if (cachedPriceOptimization != null)
                 {
-                    if (_logger.IsEnabled(LogLevel.Debug))
-                    {
-                        _logger.LogDebug("{0} cache hit [device: {1}, item: {2}]", logNamespace, request.DeviceId, request.ItemId);
-                    }
-
+                    
+                    _logger.LogDebug("{0} cache hit [device: {1}, item: {2}]", logNamespace, request.DeviceId, request.ItemId);
+                    
                     var priceOptimization = CreatePriceOptimization(cachedPriceOptimization);
                     return new GetPriceOptimizationResponse(priceOptimization);
                 }
 
-                if (_logger.IsEnabled(LogLevel.Debug))
-                {
-                    _logger.LogDebug("{0} cache miss, calling api [device: {1}, item: {2}]", logNamespace, request.DeviceId, request.ItemId);
-                }
+                
+                _logger.LogDebug("{0} cache miss, calling api [device: {1}, item: {2}]", logNamespace, request.DeviceId, request.ItemId);
+                
 
-                //todo: test, and repeat this for batch
                 if (!String.IsNullOrEmpty(request.UserAgent))
                 {
                     var userAgentOverridesResponse = await GetPriceOptimizationsUserAgentOverridesAsync(cancellationToken);
@@ -141,10 +134,9 @@ namespace Spresso.Sdk.PriceOptimizations
                     {
                         if (userAgentOverridesResponse.UserAgentRegexes.Any(regex => regex.IsMatch(request.UserAgent)))
                         {
-                            if (_logger.IsEnabled(LogLevel.Debug))
-                            {
-                                _logger.LogDebug("{0} user agent override [device: {1}, item: {2}, user-agent: {3}].  Proceeding", logNamespace, request.DeviceId, request.ItemId, request.UserAgent);
-                            }
+                            
+                            _logger.LogDebug("{0} user agent override [device: {1}, item: {2}, user-agent: {3}].  Proceeding", logNamespace, request.DeviceId, request.ItemId, request.UserAgent);
+                            
                             return new GetPriceOptimizationResponse(new PriceOptimization
                             {
                                 UserId = request.UserId,
@@ -157,11 +149,8 @@ namespace Spresso.Sdk.PriceOptimizations
                     }
                     else
                     {
-                        if (_logger.IsEnabled(LogLevel.Warning))
-                        {
-                            _logger.LogWarning("{0} failed to get user agent overrides [device: {1}, item: {2}].  Proceeding", logNamespace, request.DeviceId, request.ItemId);
-                        }
-
+                        _logger.LogWarning("{0} failed to get user agent overrides [device: {1}, item: {2}].  Proceeding", logNamespace, request.DeviceId, request.ItemId);
+                        
                     }
                 }
                
@@ -177,6 +166,9 @@ namespace Spresso.Sdk.PriceOptimizations
                 var httpClient = GetHttpClient(token);
                 var query =
                     $"/v1/priceOptimizations?deviceId={request.DeviceId}&itemId={request.ItemId}&defaultPrice={request.DefaultPrice}&overrideToDefaultPrice={request.OverrideToDefaultPrice}";
+
+                _logger.LogDebug("{0} querying {1}", logNamespace, query);
+
                 if (!string.IsNullOrEmpty(request.UserId))
                 {
                     query += $"&userId={request.UserId}";
@@ -198,16 +190,21 @@ namespace Spresso.Sdk.PriceOptimizations
 
             if (executionResult.IsSuccess)
             {
+                _logger.LogDebug("{0} found result [device: {1}, item: {2}]", logNamespace, executionResult.PriceOptimization!.Value.DeviceId, executionResult.PriceOptimization!.Value.ItemId);
                 return executionResult;
             }
 
             // create a price optimization upon failure using the default price
-            return new GetPriceOptimizationResponse(executionResult.Error, CreateDefaultPriceOptimization(request));
+            var defaultPriceOptimization = CreateDefaultPriceOptimization(request);
+            _logger.LogDebug("{0} failed getting price optimization. using fallback [device: {1}, item: {2}]", logNamespace, defaultPriceOptimization.DeviceId, defaultPriceOptimization.ItemId);
+            return new GetPriceOptimizationResponse(executionResult.Error, defaultPriceOptimization);
         }
 
         public async Task<GetBatchPriceOptimizationsResponse> GetBatchPriceOptimizationsAsync(GetBatchPriceOptimizationsRequest request,
             CancellationToken cancellationToken = default)
         {
+            const string logNamespace = "@@GetBatchPriceOptimizationsAsync@@";
+
             var executionResult = await _getPriceOptimizationsBatchPolicy.ExecuteAsync(async () =>
             {
                 var poRequests = request.Requests.ToList();
@@ -218,8 +215,6 @@ namespace Spresso.Sdk.PriceOptimizations
                     throw new ArgumentException($"Max batch size is {MaxRequestSize} requests");
                 }
 
-                const string logNamespace = "@@PriceOptimizationsHandler.GetBatchPriceOptimizationsAsync@@";
-
                 if (!String.IsNullOrEmpty(request.UserAgent))
                 {
                     var userAgentOverridesResponse = await GetPriceOptimizationsUserAgentOverridesAsync(cancellationToken);
@@ -227,10 +222,9 @@ namespace Spresso.Sdk.PriceOptimizations
                     {
                         if (userAgentOverridesResponse.UserAgentRegexes.Any(regex => regex.IsMatch(request.UserAgent)))
                         {
-                            if (_logger.IsEnabled(LogLevel.Debug))
-                            {
-                                _logger.LogDebug("{0} user agent override [user-agent: {1}].  Proceeding", logNamespace, request.UserAgent);
-                            }
+                            
+                            _logger.LogDebug("{0} user agent override [user-agent: {1}].  Proceeding", logNamespace, request.UserAgent);
+                            
                             return new GetBatchPriceOptimizationsResponse(request.Requests.Select(request => new PriceOptimization
                             {
                                 UserId = request.UserId,
@@ -244,10 +238,7 @@ namespace Spresso.Sdk.PriceOptimizations
                     }
                     else
                     {
-                        if (_logger.IsEnabled(LogLevel.Warning))
-                        {
-                            _logger.LogWarning("{0} failed to get user agent overrides", logNamespace);
-                        }
+                        _logger.LogWarning("{0} failed to get user agent overrides", logNamespace);
                     }
                 }
 
@@ -259,28 +250,18 @@ namespace Spresso.Sdk.PriceOptimizations
                 {
                     var poRequest = poRequests[i];
 
-                    if (_logger.IsEnabled(LogLevel.Debug))
-                    {
-                        _logger.LogDebug("{0} Checking cache for [device: {1}, item: {2}]", logNamespace, poRequest.DeviceId, poRequest.ItemId);
-                    }
+                    _logger.LogDebug("{0} Checking cache for [device: {1}, item: {2}]", logNamespace, poRequest.DeviceId, poRequest.ItemId);
+                    
                     var cacheKey = GetPriceOptimizationCacheKey(poRequest);
                     var cachedPriceOptimization = await _distributedCache.GetStringAsync(cacheKey, cancellationToken);
                     if (cachedPriceOptimization != null)
                     {
-                        if (_logger.IsEnabled(LogLevel.Debug))
-                        {
-                            _logger.LogDebug("{0} cache hit [device: {1}, item: {2}]", logNamespace, poRequest.DeviceId, poRequest.ItemId);
-                        }
-
+                        _logger.LogDebug("{0} cache hit [device: {1}, item: {2}]", logNamespace, poRequest.DeviceId, poRequest.ItemId);
                         responses[i] = CreatePriceOptimization(cachedPriceOptimization);
                     }
                     else
                     {
-                        if (_logger.IsEnabled(LogLevel.Debug))
-                        {
-                            _logger.LogDebug("{0} cache miss [device: {1}, item: {2}]", logNamespace, poRequest.DeviceId, poRequest.ItemId);
-                        }
-
+                        _logger.LogDebug("{0} cache miss [device: {1}, item: {2}]", logNamespace, poRequest.DeviceId, poRequest.ItemId);
                         needApiCallIndexes.Add(i);
                     }
                 }
@@ -339,9 +320,11 @@ namespace Spresso.Sdk.PriceOptimizations
 
             if (executionResult.IsSuccess)
             {
+                _logger.LogDebug("{0} found results", logNamespace);
                 return executionResult;
             }
 
+            _logger.LogDebug("{0} failed getting batch prioce optimizations.  using fallback", logNamespace);
             // todo: fallback price not cached, but note error may be because issue with cache.
             return new GetBatchPriceOptimizationsResponse(executionResult.Error, request.Requests.Select(CreateDefaultPriceOptimization));
         }
@@ -479,10 +462,9 @@ namespace Spresso.Sdk.PriceOptimizations
 
             if (!tokenResponse.IsSuccess)
             {
-                if (_logger.IsEnabled(LogLevel.Error))
-                {
-                    _logger.LogError("{0} failed to get token", logNamespace);
-                }
+                
+                _logger.LogError("{0} failed to get token", logNamespace);
+                
                 return (false, null, failureResponseFunc(PriceOptimizationError.AuthError));
             }
 
