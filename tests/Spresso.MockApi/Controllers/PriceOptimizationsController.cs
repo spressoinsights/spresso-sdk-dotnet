@@ -79,6 +79,21 @@ namespace Spresso.MockApi.Controllers ;
             });
         }
 
+        [HttpGet("userAgents")]
+        public async Task<IActionResult> GetUserAgents(CancellationToken cancellationToken = default)
+        {
+            var userAgents = new UserAgentRegex[]
+            {
+                new UserAgentRegex("Googlebot", "Googlebot+"),
+                new UserAgentRegex("Storebot-Google", "Storebot-Google+")
+            };
+
+            return Ok(new
+            {
+                Data = userAgents
+            });
+        }
+
         public class GetBatchPriceOptimizationsRequest
         {
             public GetSinglePriceOptimizationRequest[] PricingRefs { get; set; }
@@ -94,4 +109,6 @@ namespace Spresso.MockApi.Controllers ;
         }
 
         public record PriceOptimization(string ItemId, string DeviceId, decimal Price, bool IsOptimizedPrice, string? UserId = default);
+
+        public record UserAgentRegex(string Name, string Regex);
     }

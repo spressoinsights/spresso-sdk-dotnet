@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,6 +12,28 @@ namespace Spresso.Sdk.PriceOptimizations
 
         Task<GetBatchPriceOptimizationsResponse> GetBatchPriceOptimizationsAsync(GetBatchPriceOptimizationsRequest request,
             CancellationToken cancellationToken = default);
+
+        Task<GetPriceOptimizationsUserAgentOverridesResponse> GetPriceOptimizationsUserAgentOverridesAsync(CancellationToken cancellationToken = default);
+    }
+
+    public readonly struct GetPriceOptimizationsUserAgentOverridesResponse : IPriceOptimizationResult
+    {
+        
+        public Regex[] UserAgentRegexes { get; }
+        public bool IsSuccess => Error == PriceOptimizationError.None;
+        public PriceOptimizationError Error { get; }
+
+        public GetPriceOptimizationsUserAgentOverridesResponse(Regex[]? userAgentRegexes)
+        {
+            UserAgentRegexes = userAgentRegexes ?? Array.Empty<Regex>();
+            Error = PriceOptimizationError.None;
+        }
+
+        public GetPriceOptimizationsUserAgentOverridesResponse(PriceOptimizationError error)
+        {
+            UserAgentRegexes = Array.Empty<Regex>();
+            Error = error;
+        }
     }
 
 

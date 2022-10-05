@@ -21,7 +21,7 @@ var redisCache = new RedisCache(new OptionsWrapper<RedisCacheOptions>(new RedisC
     var priceOptimizationHandler = new PriceOptimizationsHandler(tokenHandler, new PriceOptimizationsHandlerOptions
     {
         SpressoBaseUrl = Environment.GetEnvironmentVariable("SPRESSO_BASE_AUTH_URL"),
-        Cache = redisCache,
+        DistributedCache = redisCache,
         AdditionalParameters = ""
     });
 
@@ -34,16 +34,19 @@ var redisCache = new RedisCache(new OptionsWrapper<RedisCacheOptions>(new RedisC
 // Console.WriteLine((response.PriceOptimization?.IsOptimizedPrice ?? false) + " " + sw.Elapsed.TotalSeconds);
 
 
-    while (true)
-    {
-    var sw = Stopwatch.StartNew();
-        var batchRequest = new GetBatchPriceOptimizationsRequest(new[] { singleRequest, secondRequest });
-    
-        sw.Start();
-        var batchResponse = await priceOptimizationHandler.GetBatchPriceOptimizationsAsync(batchRequest);
-        sw.Stop();
-        Console.WriteLine(sw.Elapsed.TotalSeconds);
-        //Console.ReadKey();
-    }
+    // while (true)
+    // {
+    // var sw = Stopwatch.StartNew();
+    //     var batchRequest = new GetBatchPriceOptimizationsRequest(new[] { singleRequest, secondRequest });
+    //
+    //     sw.Start();
+    //     var batchResponse = await priceOptimizationHandler.GetBatchPriceOptimizationsAsync(batchRequest);
+    //     sw.Stop();
+    //     Console.WriteLine(sw.Elapsed.TotalSeconds);
+    //     //Console.ReadKey();
+    // }
+
+    var overrides = await priceOptimizationHandler.GetPriceOptimizationsUserAgentOverridesAsync(default);
+    overrides = await priceOptimizationHandler.GetPriceOptimizationsUserAgentOverridesAsync(default);
 
 

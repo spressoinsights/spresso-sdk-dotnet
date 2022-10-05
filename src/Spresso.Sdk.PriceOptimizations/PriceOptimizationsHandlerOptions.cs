@@ -18,8 +18,13 @@ namespace Spresso.Sdk.PriceOptimizations
         /// <summary>
         ///     For caching price optimizations
         /// </summary>
-        public IDistributedCache Cache { get; set; } =
+        public IDistributedCache DistributedCache { get; set; } =
             new MemoryDistributedCache(new OptionsWrapper<MemoryDistributedCacheOptions>(new MemoryDistributedCacheOptions()));
+
+        /// <summary>
+        ///     For caching object that must remain local to the server
+        /// </summary>
+        public IMemoryCache LocalCache { get; set; } = new MemoryCache(new MemoryCacheOptions());
 
         /// <summary>
         ///     "Namespace" for price optimizations in cache.  Set this if you need to manage multiple groups of price
