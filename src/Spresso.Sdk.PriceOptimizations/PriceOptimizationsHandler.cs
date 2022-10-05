@@ -74,7 +74,7 @@ namespace Spresso.Sdk.PriceOptimizations
                         return Task.FromResult(response.Result);
                     },
                     (result, context) => Task.CompletedTask
-                    ));
+                    ), nameof(GetPriceOptimizationAsync));
 
             _getPriceOptimizationsBatchPolicy = CreateResiliencyPolicy(options,
                 new FallbackOptions<GetBatchPriceOptimizationsResponse>(
@@ -98,7 +98,7 @@ namespace Spresso.Sdk.PriceOptimizations
                         return Task.FromResult(response.Result);
                     },
                     (result, context) => Task.CompletedTask
-                    ));
+                    ), nameof(GetBatchPriceOptimizationsAsync));
         }
 
         //todo: paging
