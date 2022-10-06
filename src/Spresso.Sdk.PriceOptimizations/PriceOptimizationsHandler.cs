@@ -367,79 +367,28 @@ namespace Spresso.Sdk.PriceOptimizations
             return JsonConvert.DeserializeObject<GetUserAgentRegexesApiResponse>(jsonResponse);
         }
 
-        private async Task<T> ExecutePostApiRequestAsync<T>(HttpClient httpClient, string requestUri, string requestJson, Func<string, Task<T>> onSuccessFunc,
+        private Task<T> ExecutePostApiRequestAsync<T>(HttpClient httpClient, string requestUri, string requestJson, Func<string, Task<T>> onSuccessFunc,
             Func<PriceOptimizationError, T> onFailureFunc, CancellationToken cancellationToken)
         {
-            try
-            {
-                var apiResponse = await httpClient.PostAsync(requestUri, new StringContent(requestJson, Encoding.UTF8, "application/json"),
-                    cancellationToken);
-
-                if (apiResponse.IsSuccessStatusCode)
-                {
-                    var json = await apiResponse.Content.ReadAsStringAsync();
-                    return await onSuccessFunc(json);
-                }
-                switch (apiResponse.StatusCode)
-                {
-                    case HttpStatusCode.Unauthorized:
-                    case HttpStatusCode.Forbidden:
-                        return onFailureFunc(PriceOptimizationError.AuthError);
-                    case HttpStatusCode.BadRequest:
-                        return onFailureFunc(PriceOptimizationError.BadRequest);
-                    default:
-                        return onFailureFunc(PriceOptimizationError.Unknown);
-                }
-            }
-            catch (HttpRequestException e) when (e.Message.Contains("No connection could be made because the target machine actively refused it."))
-            {
-                return onFailureFunc(PriceOptimizationError.Timeout);
-            }
-            catch (OperationCanceledException e)
-            {
-                return onFailureFunc(PriceOptimizationError.Timeout);
-            }
-            catch (Exception e)
-            {
-                return onFailureFunc(PriceOptimizationError.Unknown);
-            }
+            return httpClient.ExecutePostApiRequestAsync(requestUri, requestJson,
+                onSuccessFunc: (apiResponseJson, httpStatus) => onSuccessFunc(apiResponseJson),
+                onAuthErrorFailure: statusCode => onFailureFunc(PriceOptimizationError.AuthError),
+                onBadRequestFailure: () => onFailureFunc(PriceOptimizationError.BadRequest),
+                onTimeoutFailure: exception => onFailureFunc(PriceOptimizationError.Timeout),
+                onUnknownFailure: (exception, code) => onFailureFunc(PriceOptimizationError.Unknown),
+                cancellationToken);
         }
 
-        private async Task<T> ExecuteGetApiRequestAsync<T>(HttpClient httpClient, string requestUri, Func<string, Task<T>> onSuccessFunc,
+        private Task<T> ExecuteGetApiRequestAsync<T>(HttpClient httpClient, string requestUri, Func<string, Task<T>> onSuccessFunc,
             Func<PriceOptimizationError, T> onFailureFunc, CancellationToken cancellationToken)
         {
-            try
-            {
-                var apiResponse = await httpClient.GetAsync(requestUri, cancellationToken);
-
-                if (apiResponse.IsSuccessStatusCode)
-                {
-                    var json = await apiResponse.Content.ReadAsStringAsync();
-                    return await onSuccessFunc(json);
-                }
-                switch (apiResponse.StatusCode)
-                {
-                    case HttpStatusCode.Unauthorized:
-                    case HttpStatusCode.Forbidden:
-                        return onFailureFunc(PriceOptimizationError.AuthError);
-                    case HttpStatusCode.BadRequest:
-                        return onFailureFunc(PriceOptimizationError.BadRequest);
-                    default:
-                        return onFailureFunc(PriceOptimizationError.Unknown);
-                }
-            }
-            catch (HttpRequestException e) when (e.Message.Contains("No connection could be made because the target machine actively refused it."))
-            {
-                return onFailureFunc(PriceOptimizationError.Timeout);
-            }
-            catch (OperationCanceledException e)
-            {
-                return onFailureFunc(PriceOptimizationError.Timeout);
-            }
-            catch (Exception e)
-            {
-                return onFailureFunc(PriceOptimizationError.Unknown);
-            }
+            return httpClient.ExecuteGetApiRequestAsync(requestUri, 
+                onSuccessFunc: (apiResponseJson, httpStatus) => onSuccessFunc(apiResponseJson),
+                onAuthErrorFailure: statusCode => onFailureFunc(PriceOptimizationError.AuthError),
+                onBadRequestFailure: () => onFailureFunc(PriceOptimizationError.BadRequest),
+                onTimeoutFailure: exception => onFailureFunc(PriceOptimizationError.Timeout),
+                onUnknownFailure: (exception, code) => onFailureFunc(PriceOptimizationError.Unknown),
+                cancellationToken);
         }
 
 

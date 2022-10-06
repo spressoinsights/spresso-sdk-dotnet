@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -77,59 +78,52 @@ namespace Spresso.Sdk.Core.Auth
         {
             return await _tokenResiliencyPolicy.ExecuteAsync(async () =>
             {
-                try
-                {
-                    var auth0TokenResponseJson = await _cache.GetStringAsync(_tokenCacheKey, cancellationToken);
-                    if (!string.IsNullOrEmpty(auth0TokenResponseJson))
+                var httpClient = _httpClientFactory.GetClient();
+                httpClient.BaseAddress = new Uri(_spressoBaseAuthUrl);
+                httpClient.Timeout = _httpTimeout;
+
+
+                _logger.LogDebug("@@{0}@@ Fetching token", nameof(GetTokenAsync));
+                
+                return await httpClient.ExecutePostApiRequestAsync(_tokenEndpoint, _tokenRequest,
+                    onSuccessFunc: async (auth0TokenResponseJson, statusCode) =>
                     {
-                        return CreateTokenResponse(auth0TokenResponseJson);
-                    }
-
-                    var httpClient = _httpClientFactory.GetClient();
-                    httpClient.BaseAddress = new Uri(_spressoBaseAuthUrl);
-                    httpClient.Timeout = _httpTimeout;
-
-
-                    _logger.LogDebug("@@{0}@@ Fetching token", nameof(GetTokenAsync));
-
-
-                    var response = await httpClient.PostAsync(_tokenEndpoint, new StringContent(_tokenRequest, Encoding.UTF8, "application/json"),
-                        cancellationToken);
-
-                    _logger.LogDebug("@@{0}@@ Token status code {1}", nameof(GetTokenAsync), response.StatusCode);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        auth0TokenResponseJson = await response.Content.ReadAsStringAsync();
+                        _logger.LogDebug("@@{0}@@ Token status code {1}", nameof(GetTokenAsync), statusCode);
                         var tokenResponse = CreateTokenResponse(auth0TokenResponseJson);
                         await _cache.SetStringAsync(_tokenCacheKey, auth0TokenResponseJson, new DistributedCacheEntryOptions
                         {
                             AbsoluteExpiration = tokenResponse.ExpiresAt!.Value.Subtract(new TimeSpan(0, 5, 0))
                         }, cancellationToken);
                         return tokenResponse;
-                    }
-                    switch (response.StatusCode)
+                    },
+                    onAuthErrorFailure: (statusCode) =>
                     {
-                        case HttpStatusCode.Unauthorized:
-                            return new TokenResponse(AuthError.InvalidCredentials);
-                        case HttpStatusCode.Forbidden:
-                            return new TokenResponse(AuthError.InvalidScopes);
-                        default:
-                            return new TokenResponse(AuthError.Unknown);
-                    }
-                }
-                catch (HttpRequestException e) when (e.Message.Contains("No connection could be made because the target machine actively refused it."))
-                {
-                    return new TokenResponse(AuthError.Timeout);
-                }
-                catch (OperationCanceledException e)
-                {
-                    return new TokenResponse(AuthError.Timeout);
-                }
-                catch (Exception e)
-                {
-                    return new TokenResponse(AuthError.Unknown);
-                }
+                        _logger.LogDebug("@@{0}@@ Token status code {1}", nameof(GetTokenAsync), statusCode);
+                        switch (statusCode)
+                        {
+                            case HttpStatusCode.Unauthorized:
+                                return new TokenResponse(AuthError.InvalidCredentials);
+                            default:
+                                return new TokenResponse(AuthError.InvalidScopes);
+                        }
+
+                    },
+                    onBadRequestFailure: () =>
+                    {
+                        _logger.LogError("@@{0}@@ Token status code {1}", nameof(GetTokenAsync), HttpStatusCode.BadRequest);
+                        return new TokenResponse(AuthError.Unknown);
+                    },
+                    onTimeoutFailure: exception =>
+                    {
+                        _logger.LogError("@@{0}@@ Error getting token.  Exception: {1}", nameof(GetTokenAsync), exception);
+                        return new TokenResponse(AuthError.Timeout);
+                    },
+                    onUnknownFailure: (exception, httpStatusCode) =>
+                    {
+                        _logger.LogError("@@{0}@@ Error getting token.  HttpStatusCode: {1}, Exception: {2}", nameof(GetTokenAsync), httpStatusCode, exception);
+                        return new TokenResponse(AuthError.Unknown);
+                    },
+                    cancellationToken);
             });
         }
 
