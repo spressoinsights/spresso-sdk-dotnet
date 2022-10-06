@@ -20,7 +20,7 @@ namespace Spresso.MockApi.Controllers ;
                 await Task.Delay(new TimeSpan(0, 0, 0, delay), cancellationToken);
             }
 
-            if (request.OverrideToDefaultPrice || Random.Shared.Next(10) >= 7)
+            if (request.OverrideToDefaultPrice)
             {
                 return Ok(new
                 {
@@ -60,7 +60,7 @@ namespace Spresso.MockApi.Controllers ;
 
             var response = new List<PriceOptimization>(request.PricingRefs.Length);
             foreach (var pricingRef in request.PricingRefs)
-                if (pricingRef.OverrideToDefaultPrice || Random.Shared.Next(10) >= 7)
+                if (pricingRef.OverrideToDefaultPrice)
                 {
                     response.Add(new PriceOptimization(pricingRef.ItemId, pricingRef.DeviceId, pricingRef.DefaultPrice, false, pricingRef.UserId));
                 }
