@@ -69,11 +69,7 @@ namespace Spresso.Sdk.Core.Auth
             _tokenResiliencyPolicy = CreateTokenResiliencyPolicy(options);
         }
 
-        /// <summary>
-        ///     Gets the access token.
-        /// </summary>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
+       /// <inheritdoc cref="ITokenHandler.GetTokenAsync"/>
         public async Task<TokenResponse> GetTokenAsync(CancellationToken cancellationToken = default)
         {
             return await _tokenResiliencyPolicy.ExecuteAsync(async () =>

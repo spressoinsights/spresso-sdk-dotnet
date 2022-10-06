@@ -54,6 +54,7 @@ namespace Spresso.Sdk.PriceOptimizations
             _getPriceOptimizationsBatchPolicy = GetPriceOptimizationsBatchResiliencyPolicy(options);
         }
 
+        /// <inheritdoc cref="IPriceOptimizationHandler.GetPriceOptimizationAsync"/>
         public async Task<GetPriceOptimizationResponse> GetPriceOptimizationAsync(GetPriceOptimizationRequest request,
             CancellationToken cancellationToken = default)
         {
@@ -154,6 +155,7 @@ namespace Spresso.Sdk.PriceOptimizations
             return new GetPriceOptimizationResponse(executionResult.Error, defaultPriceOptimization);
         }
 
+        /// <inheritdoc cref="IPriceOptimizationHandler.GetBatchPriceOptimizationsAsync"/>
         public async Task<GetBatchPriceOptimizationsResponse> GetBatchPriceOptimizationsAsync(GetBatchPriceOptimizationsRequest request,
             CancellationToken cancellationToken = default)
         {

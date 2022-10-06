@@ -8,8 +8,20 @@ namespace Spresso.Sdk.PriceOptimizations
 {
     public interface IPriceOptimizationHandler
     {
+        /// <summary>
+        ///     Gets a single price optimization
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         Task<GetPriceOptimizationResponse> GetPriceOptimizationAsync(GetPriceOptimizationRequest request, CancellationToken cancellationToken = default);
 
+        /// <summary>
+        ///     Gets multiple price optimizations
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         Task<GetBatchPriceOptimizationsResponse> GetBatchPriceOptimizationsAsync(GetBatchPriceOptimizationsRequest request,
             CancellationToken cancellationToken = default);
 
