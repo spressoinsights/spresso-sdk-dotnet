@@ -132,32 +132,32 @@ namespace Spresso.Sdk.Core.Auth
             var retryErrors = new[] { AuthError.Timeout, AuthError.Unknown };
 
             return ResiliencyPolicyBuilder.BuildPolicy(
-                new RetryOptions<TokenResponse>(t => !t.IsSuccess && retryErrors.Contains(t.Error), options.NumberOfRetries),
+                retryOptions: new RetryOptions<TokenResponse>(t => !t.IsSuccess && retryErrors.Contains(t.Error), options.NumberOfRetries),
                 new TimeoutOptions(options.Timeout),
-                new CircuitBreakerOptions<TokenResponse>(t => !t.IsSuccess && retryErrors.Contains(t.Error),
+                circuitBreakerOptions: new CircuitBreakerOptions<TokenResponse>(t => !t.IsSuccess && retryErrors.Contains(t.Error),
                     options.NumberOfFailuresBeforeTrippingCircuitBreaker,
                     options.CircuitBreakerBreakDuration,
-                    (state, ts, ctx) => { _logger.LogError("Token circuit breaker tripped"); },
-                    ctx => { _logger.LogInformation("Token circuit breaker reset"); }),
-                new FallbackOptions<TokenResponse>(
-                    r => !r.IsSuccess,
-                    (tokenResponse, ctx, cancellationToken) =>
-                    {
-                        _logger.LogError("Token request failed.  Error {0}.  Exception (if applicable): {1}", tokenResponse?.Result.Error,
-                            tokenResponse?.Exception?.Message);
-
-                        if (tokenResponse.Exception != null)
-                        {
-                            if (tokenResponse.Exception is TimeoutRejectedException)
+                    onBreakAction: (state, ts, ctx) => { _logger.LogError("Token circuit breaker tripped"); },
+                    onResetAction: ctx => { _logger.LogInformation("Token circuit breaker reset"); }),
+                        fallbackOptions: new FallbackOptions<TokenResponse>(
+                            fallbackPredicate: r => !r.IsSuccess,
+                            fallbackAction: (tokenResponse, ctx, cancellationToken) =>
                             {
-                                return Task.FromResult(new TokenResponse(AuthError.Timeout));
-                            }
-                            return Task.FromResult(new TokenResponse(AuthError.Unknown));
-                        }
+                                _logger.LogError("Token request failed.  Error {0}.  Exception (if applicable): {1}", tokenResponse?.Result.Error,
+                                    tokenResponse?.Exception?.Message);
 
-                        return Task.FromResult(tokenResponse.Result);
-                    },
-                    (result, context) => Task.CompletedTask)
+                                if (tokenResponse.Exception != null)
+                                {
+                                    if (tokenResponse.Exception is TimeoutRejectedException)
+                                    {
+                                        return Task.FromResult(new TokenResponse(AuthError.Timeout));
+                                    }
+                                    return Task.FromResult(new TokenResponse(AuthError.Unknown));
+                                }
+
+                                return Task.FromResult(tokenResponse.Result);
+                            },
+                            onFallback: (result, context) => Task.CompletedTask)
                 );
         }
 

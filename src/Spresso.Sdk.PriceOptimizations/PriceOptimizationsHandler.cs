@@ -440,19 +440,19 @@ namespace Spresso.Sdk.PriceOptimizations
         {
             var retryErrors = new[] { PriceOptimizationError.Timeout, PriceOptimizationError.Unknown };
             return ResiliencyPolicyBuilder.BuildPolicy(
-                new RetryOptions<T>(r => !r.IsSuccess && retryErrors.Contains(r.Error), options.NumberOfRetries),
+                retryOptions: new RetryOptions<T>(r => !r.IsSuccess && retryErrors.Contains(r.Error), options.NumberOfRetries),
                 new TimeoutOptions(options.Timeout),
-                new CircuitBreakerOptions<T>(
-                    r => !r.IsSuccess && retryErrors.Contains(r.Error),
+                circuitBreakerOptions: new CircuitBreakerOptions<T>(
+                    breakPredicate: r => !r.IsSuccess && retryErrors.Contains(r.Error),
                     options.NumberOfFailuresBeforeTrippingCircuitBreaker,
                     options.CircuitBreakerBreakDuration,
-                    (response, timespan, context) =>
+                    onBreakAction: (response, timespan, context) =>
                     {
                         _logger.LogWarning("@@{0}.{1}@@ Circuit breaker tripped for {2}ms due to error {3}.  Exception details (if applicable): {4}: ",
                             nameof(PriceOptimizationsHandler), caller, timespan.TotalMilliseconds,
                             response.Result.Error, response.Exception?.Message);
                     },
-                    context => { _logger.LogInformation("\"@@{0}.{1}@@ Circuit breaker reset", nameof(PriceOptimizationsHandler), caller); }),
+                    onResetAction: context => { _logger.LogInformation("@@{0}.{1}@@ Circuit breaker reset", nameof(PriceOptimizationsHandler), caller); }),
                 fallbackOptions);
         }
 
