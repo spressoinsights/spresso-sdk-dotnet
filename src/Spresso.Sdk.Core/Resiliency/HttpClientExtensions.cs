@@ -9,6 +9,20 @@ namespace Spresso.Sdk.Core.Resiliency
 {
     public static class HttpClientExtensions
     {
+        /// <summary>
+        ///     Execute a http POST request and handle json response or various error conditions
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="httpClient"></param>
+        /// <param name="requestUri"></param>
+        /// <param name="requestJson"></param>
+        /// <param name="onSuccessFunc"></param>
+        /// <param name="onAuthErrorFailure"></param>
+        /// <param name="onBadRequestFailure"></param>
+        /// <param name="onTimeoutFailure"></param>
+        /// <param name="onUnknownFailure"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         public static async Task<T> ExecutePostApiRequestAsync<T>(this HttpClient httpClient, string requestUri, string requestJson, 
             Func<string, HttpStatusCode, Task<T>> onSuccessFunc,
             Func<HttpStatusCode, T> onAuthErrorFailure, 
@@ -52,6 +66,19 @@ namespace Spresso.Sdk.Core.Resiliency
             }
         }
 
+        /// <summary>
+        ///     Execute a http GET request and handle json response or various error conditions
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="httpClient"></param>
+        /// <param name="requestUri"></param>
+        /// <param name="onSuccessFunc"></param>
+        /// <param name="onAuthErrorFailure"></param>
+        /// <param name="onBadRequestFailure"></param>
+        /// <param name="onTimeoutFailure"></param>
+        /// <param name="onUnknownFailure"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         public static async Task<T> ExecuteGetApiRequestAsync<T>(this HttpClient httpClient, string requestUri,
             Func<string, HttpStatusCode, Task<T>> onSuccessFunc,
             Func<HttpStatusCode, T> onAuthErrorFailure,

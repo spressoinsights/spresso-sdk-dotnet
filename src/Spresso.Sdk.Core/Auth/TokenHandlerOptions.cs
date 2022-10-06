@@ -15,7 +15,7 @@ namespace Spresso.Sdk.Core.Auth
         private int _numberOfFailuresBeforeTrippingCircuitBreaker = 10;
 
         private int _numberOfRetries = 3;
-        private TimeSpan _timeout = new TimeSpan(0, 0, 0, 30);
+        private TimeSpan _timeout = new TimeSpan(0, 0, 0, seconds: 30);
 
         /// <summary>
         ///     Caches tokens for faster performance.  Note: tokens are not encrypted
@@ -109,12 +109,12 @@ namespace Spresso.Sdk.Core.Auth
         /// <summary>
         ///     The duration of the circuit breaker break in which all requests will quickly fail. Default is 60 seconds
         /// </summary>
-        public TimeSpan CircuitBreakerBreakDuration { get; set; } = new TimeSpan(0, 0, 0, 60);
+        public TimeSpan CircuitBreakerBreakDuration { get; set; } = new TimeSpan(0, 0, 0, seconds: 60);
 
         /// <summary>
         ///     Http timeout.  Default is 30 seconds.
         /// </summary>
-        public TimeSpan HttpTimeout { get; set; } = new TimeSpan(0, 0, 0, 30);
+        public TimeSpan HttpTimeout { get; set; } = new TimeSpan(0, 0, 0, seconds: 30);
 
         /// <summary>
         ///     Logger for debug events
