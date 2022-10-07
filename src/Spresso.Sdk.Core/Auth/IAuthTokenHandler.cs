@@ -3,13 +3,13 @@ using System.Threading.Tasks;
 
 namespace Spresso.Sdk.Core.Auth
 {
-    public interface ITokenHandler
+    public interface IAuthTokenHandler
     {
         /// <summary>
         ///     Gets a token for the given scopes.  If the token is not cached, it will be fetched from the server.
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task<TokenResponse> GetTokenAsync(CancellationToken cancellationToken = default);
+        Task<AuthTokenResponse> GetTokenAsync(CancellationToken cancellationToken = default);
     }
 }

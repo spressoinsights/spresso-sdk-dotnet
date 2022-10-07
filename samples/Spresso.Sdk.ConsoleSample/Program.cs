@@ -13,14 +13,14 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddLogging(c => c.AddSystemdConsole().SetMinimumLevel(LogLevel.Debug));
         services.AddSingleton(o => new RedisCacheOptions { Configuration = "localhost" });
         services.AddSingleton<IDistributedCache, RedisCache>(sp => new RedisCache(sp.GetRequiredService<RedisCacheOptions>()));
-        services.AddSingleton(sp => new TokenHandlerOptions
+        services.AddSingleton(sp => new AuthTokenHandlerOptions
         {
             Cache = sp.GetRequiredService<IDistributedCache>(),
             AdditionalParameters = "",
             SpressoBaseAuthUrl = Environment.GetEnvironmentVariable("SPRESSO_BASE_AUTH_URL"),
-            Logger = sp.GetService<ILogger<ITokenHandler>>()
+            Logger = sp.GetService<ILogger<IAuthTokenHandler>>()
         });
-        services.AddSingleton<ITokenHandler, TokenHandler>(sp => new TokenHandler("test123", "secret", sp.GetRequiredService<TokenHandlerOptions>()));
+        services.AddSingleton<IAuthTokenHandler, AuthTokenHandler>(sp => new AuthTokenHandler("test123", "secret", sp.GetRequiredService<AuthTokenHandlerOptions>()));
         services.AddSingleton(
             sp =>
                 new PriceOptimizationsHandlerOptions

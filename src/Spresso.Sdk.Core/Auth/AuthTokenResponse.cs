@@ -2,21 +2,21 @@
 
 namespace Spresso.Sdk.Core.Auth
 {
-    public struct TokenResponse
+    public struct AuthTokenResponse
     {
         public string? Token { get; }
         public DateTimeOffset? ExpiresAt { get; }
         public bool IsSuccess => Error == AuthError.None;
         public AuthError Error { get; }
 
-        public TokenResponse(string token, DateTimeOffset expiresAt)
+        public AuthTokenResponse(string token, DateTimeOffset expiresAt)
         {
             Token = token;
             ExpiresAt = expiresAt;
             Error = AuthError.None;
         }
 
-        public TokenResponse(AuthError authError)
+        public AuthTokenResponse(AuthError authError)
         {
             if (authError == AuthError.None)
             {

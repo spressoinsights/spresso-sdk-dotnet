@@ -8,7 +8,7 @@ using Spresso.Sdk.Core.Connectivity;
 
 namespace Spresso.Sdk.Core.Auth
 {
-    public class TokenHandlerOptions
+    public class AuthTokenHandlerOptions
     {
         private const string DefaultSpressoBaseAuthUrl = "https://auth.spresso.com";
         private const string DefaultSpressoAudience = "https://spresso-api";
@@ -119,6 +119,6 @@ namespace Spresso.Sdk.Core.Auth
         /// <summary>
         ///     Logger for debug events
         /// </summary>
-        public ILogger<ITokenHandler> Logger { get; set; } = new NullLogger<ITokenHandler>();
+        public ILogger<IAuthTokenHandler> Logger { get; set; } = new NullLogger<IAuthTokenHandler>();
     }
 }

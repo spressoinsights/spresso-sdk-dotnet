@@ -35,13 +35,13 @@ namespace Spresso.Sdk.PriceOptimizations
         private readonly TimeSpan _httpTimeout;
         private readonly IMemoryCache _localCache;
         private readonly ILogger<IPriceOptimizationHandler> _logger;
-        private readonly ITokenHandler _tokenHandler;
+        private readonly IAuthTokenHandler _authTokenHandler;
 
-        public PriceOptimizationsHandler(ITokenHandler tokenHandler, PriceOptimizationsHandlerOptions? options = null)
+        public PriceOptimizationsHandler(IAuthTokenHandler authTokenHandler, PriceOptimizationsHandlerOptions? options = null)
         {
             options ??= new PriceOptimizationsHandlerOptions();
             _logger = options.Logger;
-            _tokenHandler = tokenHandler;
+            _authTokenHandler = authTokenHandler;
             _distributedCache = options.DistributedCache;
             _localCache = options.LocalCache;
             _httpClientFactory = options.SpressoHttpClientFactory;
@@ -406,7 +406,7 @@ namespace Spresso.Sdk.PriceOptimizations
         private async Task<(bool IsSuccess, string? Token, T ErrorResponse)> GetTokenAsync<T>(string logNamespace,
             Func<PriceOptimizationError, T> failureResponseFunc, CancellationToken cancellationToken)
         {
-            var tokenResponse = await _tokenHandler.GetTokenAsync(cancellationToken);
+            var tokenResponse = await _authTokenHandler.GetTokenAsync(cancellationToken);
 
             if (!tokenResponse.IsSuccess)
             {
