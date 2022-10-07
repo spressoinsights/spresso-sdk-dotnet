@@ -17,10 +17,10 @@ namespace Spresso.Sdk.Core.Tests ;
                     // ... Configure test services
                 });
 
-            _httpClientFactory = new TestHttpClientFactory(application);
+            _httpClientFactory = new TestHttpClientFactory<Program>(application);
         }
 
-        private readonly TestHttpClientFactory _httpClientFactory;
+        private readonly TestHttpClientFactory<Program> _httpClientFactory;
 
 
         private IAuthTokenHandler CreateAuthTokenHandler(HttpStatusCode? statusCode = null, int? delay = null, AuthTokenHandlerOptions options = null)

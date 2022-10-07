@@ -1,14 +1,12 @@
-
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Spresso.Sdk.Core.Tests ;
 
-    public class TestHttpClientFactory : IHttpClientFactory
+    public class TestHttpClientFactory<T> : IHttpClientFactory where T:class
     {
-        private readonly WebApplicationFactory<Program> _testServer;
-
-
-        public TestHttpClientFactory(WebApplicationFactory<Program> testServer)
+        private readonly WebApplicationFactory<T> _testServer;
+        
+        public TestHttpClientFactory(WebApplicationFactory<T> testServer)
         {
             _testServer = testServer;
         }
