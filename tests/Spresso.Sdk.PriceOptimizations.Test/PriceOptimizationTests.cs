@@ -172,5 +172,38 @@ namespace Spresso.Sdk.PriceOptimizations.Test
             response.PriceOptimizations.All(x => x.IsOptimizedPrice).Should().BeFalse("because the second item was overridden");
         }
 
+
+        [Fact]
+        public async Task get_batch_price_optimizations_uses_default_price_when_price_optimization_api_returns_an_error_response()
+        {
+            var priceOptimizationHandler = CreatePriceOptimizationHandler(statusCode: HttpStatusCode.InternalServerError);
+            var response = await priceOptimizationHandler.GetBatchPriceOptimizationsAsync(new GetBatchPriceOptimizationsRequest(new List<GetPriceOptimizationRequest>
+            {
+                new("test", "1111", 9.99m),
+                new("test", "2222", 19.99m),
+                new("test", "3333", 120.95m),
+            }));
+
+            response.IsSuccess.Should().BeFalse("because the server returned an 500 status code");
+            response.PriceOptimizations.All(x => x.IsOptimizedPrice).Should().BeFalse("because the fallback price was used");
+        }
+
+        [Fact]
+        public async Task get_batch_price_optimizations_uses_default_price_when_price_optimization_api_times_out()
+        {
+            var priceOptimizationHandler = CreatePriceOptimizationHandler(delay: 30, options: new PriceOptimizationsHandlerOptions { Timeout = new TimeSpan(0, 0, 0, 0, 200) });
+            var sw = Stopwatch.StartNew();
+            var response = await priceOptimizationHandler.GetBatchPriceOptimizationsAsync(new GetBatchPriceOptimizationsRequest(new List<GetPriceOptimizationRequest>
+            {
+                new("test", "1111", 9.99m),
+                new("test", "2222", 19.99m),
+                new("test", "3333", 120.95m),
+            }));
+            sw.Stop();
+            response.IsSuccess.Should().BeFalse("because the server response exceeded the set timeout");
+            response.PriceOptimizations.All(x => x.IsOptimizedPrice).Should().BeFalse("because the fallback price was used");
+            sw.Elapsed.Should().BeLessThan(new TimeSpan(0, 0, 0, 0, 1000), "because the request should have timed out at 200ms");
+        }
+        
     }
 }
