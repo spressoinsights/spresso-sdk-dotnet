@@ -39,6 +39,8 @@ else
 }
 Console.ReadKey();
 
+
+
 IHost SetupDependencyInjection(string[] strings)
 {
     var host1 = Host.CreateDefaultBuilder(strings)
@@ -70,7 +72,9 @@ IHost SetupDependencyInjection(string[] strings)
         })
         .Build();
     return host1;
-}void PricePriceOptimization(PriceOptimization priceOptimization)
+}
+
+void PricePriceOptimization(PriceOptimization priceOptimization)
 {
     Console.WriteLine($"Device: {priceOptimization.DeviceId}, Item: {priceOptimization.ItemId}, Price: {priceOptimization.Price}");
 }
