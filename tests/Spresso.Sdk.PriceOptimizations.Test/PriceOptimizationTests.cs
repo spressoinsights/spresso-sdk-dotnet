@@ -204,6 +204,20 @@ namespace Spresso.Sdk.PriceOptimizations.Test
             response.PriceOptimizations.All(x => x.IsOptimizedPrice).Should().BeFalse("because the fallback price was used");
             sw.Elapsed.Should().BeLessThan(new TimeSpan(0, 0, 0, 0, 1000), "because the request should have timed out at 200ms");
         }
-        
+
+        [Fact]
+        public async Task get_batch_price_optimizations_returns_fallback_prices_when_useragent_override_is_detected()
+        {
+            var priceOptimizationHandler = CreatePriceOptimizationHandler();
+            var response = await priceOptimizationHandler.GetBatchPriceOptimizationsAsync(new GetBatchPriceOptimizationsRequest(new List<GetPriceOptimizationRequest>
+                {
+                    new("test", "1111", 9.99m),
+                    new("test", "2222", 19.99m),
+                    new("test", "3333", 120.95m),
+                }, "Googlebot"));
+
+            response.IsSuccess.Should().BeTrue("because the request was successful");
+            response.PriceOptimizations.All(x => x.IsOptimizedPrice).Should().BeFalse("because the user agent was overridden");
+        }
     }
 }
