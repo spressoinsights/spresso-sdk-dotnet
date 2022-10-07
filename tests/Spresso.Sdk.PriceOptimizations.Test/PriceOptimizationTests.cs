@@ -138,5 +138,39 @@ namespace Spresso.Sdk.PriceOptimizations.Test
             sw.Elapsed.Should().BeLessThan(new TimeSpan(0, 0, 0, 0, 1000), "because the request should have timed out at 200ms");
         }
 
+
+        [Fact]
+        public async Task get_batch_price_optimizations()
+        {
+            var priceOptimizationHandler = CreatePriceOptimizationHandler();
+            var response = await priceOptimizationHandler.GetBatchPriceOptimizationsAsync(new GetBatchPriceOptimizationsRequest( new List<GetPriceOptimizationRequest>
+            {
+                new("test", "1111", 9.99m),
+                new("test", "2222", 19.99m),
+                new("test", "3333", 120.95m),
+            }));
+
+            response.IsSuccess.Should().BeTrue("because the request was successful");
+            response.PriceOptimizations.Count().Should().Be(3, "because 3 items were requested");
+            response.PriceOptimizations.All(x => x.IsOptimizedPrice).Should().BeTrue("because all prices are expected to be optimized");
+            response.PriceOptimizations.First().ItemId.Should().Be("1111", "because the response should be in the same order as the request");
+            response.PriceOptimizations.Last().ItemId.Should().Be("3333", "because the response should be in the same order as the request");
+        }
+
+        [Fact]
+        public async Task get_batch_price_optimizations_with_some_overrides()
+        {
+            var priceOptimizationHandler = CreatePriceOptimizationHandler();
+            var response = await priceOptimizationHandler.GetBatchPriceOptimizationsAsync(new GetBatchPriceOptimizationsRequest(new List<GetPriceOptimizationRequest>
+            {
+                new("test", "1111", 9.99m),
+                new("test", "2222", 19.99m, overrideToDefaultPrice: true),
+                new("test", "3333", 120.95m),
+            }));
+
+            response.IsSuccess.Should().BeTrue("because the request was successful");
+            response.PriceOptimizations.All(x => x.IsOptimizedPrice).Should().BeFalse("because the second item was overridden");
+        }
+
     }
 }
