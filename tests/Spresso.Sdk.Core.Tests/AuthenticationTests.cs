@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Polly.Timeout;
 using Spresso.Sdk.Core.Auth;
 using Spresso.Sdk.Core.Connectivity;
 
@@ -77,6 +78,19 @@ namespace Spresso.Sdk.Core.Tests ;
             tokenResponse.Token.Should().BeNull();
         }
 
+
+        [Fact]
+        public async Task get_token_unauthorized_throw_exception()
+        {
+            var tokenHandler = CreateAuthTokenHandler(HttpStatusCode.Unauthorized, options: new AuthTokenHandlerOptions
+            {
+                ThrowOnTokenFailure = true
+            });
+           
+            Func<Task> act = async () => { await tokenHandler.GetTokenAsync(); };
+            await act.Should().ThrowAsync<Exception>("because there was an authorization error and throwOnTokenFailure is enabled");
+        }
+
         [Fact]
         public async Task get_token_unknown_error()
         {
@@ -86,6 +100,19 @@ namespace Spresso.Sdk.Core.Tests ;
             tokenResponse.Error.Should().Be(AuthError.Unknown, "because the server returned a 500 status code");
             tokenResponse.Token.Should().BeNull();
         }
+
+        [Fact]
+        public async Task get_token_unknown_error_throw_exception()
+        {
+            var tokenHandler = CreateAuthTokenHandler(HttpStatusCode.InternalServerError, options: new AuthTokenHandlerOptions
+            {
+                ThrowOnTokenFailure = true
+            });
+
+            Func<Task> act = async () => { await tokenHandler.GetTokenAsync(); };
+            await act.Should().ThrowAsync<Exception>("because there was an error and throwOnTokenFailure is enabled");
+        }
+
 
     [Fact]
     public async Task get_token_http_timeout()
@@ -117,6 +144,23 @@ namespace Spresso.Sdk.Core.Tests ;
         tokenResponse.Token.Should().BeNull();
         sw.Elapsed.TotalSeconds.Should().BeLessOrEqualTo(1, "because timeout was set to 200s");
     }
+
+        [Fact]
+        public async Task get_token_throw_on_failure_timeout()
+        {
+            var tokenHandler = CreateAuthTokenHandler(delay: 5, options: new AuthTokenHandlerOptions
+            {
+                Timeout = new TimeSpan(0, 0, 0, 0, 200),
+                ThrowOnTokenFailure = true
+            });
+
+            Func<Task> act = async () => { await tokenHandler.GetTokenAsync(); };
+            await act.Should().ThrowAsync<TimeoutRejectedException>("because there was a timeout and throwOnTokenFailure is enabled");
+
+        }
+
+        
+
 
     [Fact]
     public async Task get_token_trips_circuit_breaker_after_too_many_errors()

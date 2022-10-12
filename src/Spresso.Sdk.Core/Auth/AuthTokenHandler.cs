@@ -29,6 +29,7 @@ namespace Spresso.Sdk.Core.Auth
         private readonly IAsyncPolicy<AuthTokenResponse> _tokenResiliencyPolicy;
         private readonly string _tokenRequest;
 
+
         /// <summary>
         ///     Initializes a new instance of the <see cref="AuthTokenHandler" /> class.
         /// </summary>
@@ -64,7 +65,6 @@ namespace Spresso.Sdk.Core.Auth
             _cache = options.Cache!;
             _tokenRequest = JsonConvert.SerializeObject(tokenRequestBuilder);
             _httpTimeout = options.HttpTimeout;
-
 
             _tokenResiliencyPolicy = CreateTokenResiliencyPolicy(options);
         }
@@ -144,6 +144,11 @@ namespace Spresso.Sdk.Core.Auth
 
                                 if (tokenResponse.Exception != null)
                                 {
+                                    if (options.ThrowOnTokenFailure)
+                                    {
+                                        throw tokenResponse.Exception;
+                                    }
+                                    
                                     if (tokenResponse.Exception is TimeoutRejectedException)
                                     {
                                         return Task.FromResult(new AuthTokenResponse(AuthError.Timeout));
@@ -151,6 +156,11 @@ namespace Spresso.Sdk.Core.Auth
                                     return Task.FromResult(new AuthTokenResponse(AuthError.Unknown));
                                 }
 
+                                if (options.ThrowOnTokenFailure)
+                                {
+                                    throw new Exception($"Token request failed.  Error {tokenResponse?.Result.Error}");
+                                }
+                                
                                 return Task.FromResult(tokenResponse.Result);
                             },
                             onFallback: (result, context) => Task.CompletedTask)

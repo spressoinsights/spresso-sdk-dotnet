@@ -120,5 +120,10 @@ namespace Spresso.Sdk.Core.Auth
         ///     Logger for debug events
         /// </summary>
         public ILogger<IAuthTokenHandler> Logger { get; set; } = new NullLogger<IAuthTokenHandler>();
+
+        /// <summary>
+        ///    Throw an exception if the token request fails.  Default is false.
+        /// </summary>
+        public bool ThrowOnTokenFailure { get; set; } = false;
     }
 }

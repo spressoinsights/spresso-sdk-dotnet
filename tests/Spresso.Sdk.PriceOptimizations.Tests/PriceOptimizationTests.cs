@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Polly.Timeout;
 using Spresso.Sdk.Core.Auth;
 using Spresso.Sdk.Core.Connectivity;
 using Spresso.Sdk.Core.Tests;
@@ -112,6 +113,15 @@ namespace Spresso.Sdk.PriceOptimizations.Test
             sw.Elapsed.Should().BeLessThan(new TimeSpan(0, 0, 0, 0, 1000), "because the request should have timed out at 200ms");
         }
 
+        [Fact]
+        public async Task get_price_optimization_throws_when_price_optimization_api_times_out_and_throw_on_failure_is_enabled()
+        {
+            var priceOptimizationHandler = CreatePriceOptimizationHandler(delay: 30, options: new PriceOptimizationsHandlerOptions { Timeout = new TimeSpan(0, 0, 0, 0, 200), ThrowOnFailure = true });
+            Func<Task> act = async () => await priceOptimizationHandler.GetPriceOptimizationAsync(new GetPriceOptimizationRequest("test", "1111", 9.99m));
+            await act.Should().ThrowAsync<TimeoutRejectedException>("because the server response exceeded the set timeout");
+        }
+
+
 
         [Fact]
         public async Task get_price_optimization_uses_default_price_when_token_cannot_be_fetched()
@@ -122,6 +132,16 @@ namespace Spresso.Sdk.PriceOptimizations.Test
             response.IsSuccess.Should().BeFalse("because the server returned an 500 status code when attempting to fetch a token");
             response.PriceOptimization.HasValue.Should().BeTrue("because the request was successful");
             response.PriceOptimization.Value.IsOptimizedPrice.Should().BeFalse("because the fallback price was used");
+        }
+
+
+        [Fact]
+        public async Task get_price_optimization_throws_exception_when_token_cannot_be_fetched_and_throw_on_failure_enabled()
+        {
+            var authTokenHandler = CreateAuthTokenHandler(statusCode: HttpStatusCode.InternalServerError, options: new AuthTokenHandlerOptions { ThrowOnTokenFailure = true });
+            var priceOptimizationHandler = CreatePriceOptimizationHandler(authTokenHandler: authTokenHandler, options: new PriceOptimizationsHandlerOptions { ThrowOnFailure = true });
+            Func<Task> act = async () => await priceOptimizationHandler.GetPriceOptimizationAsync(new GetPriceOptimizationRequest("test", "1111", 9.99m));
+            await act.Should().ThrowAsync<Exception>("because the server returned an 500 status code when attempting to fetch a token");
         }
 
         [Fact]
@@ -138,6 +158,15 @@ namespace Spresso.Sdk.PriceOptimizations.Test
             sw.Elapsed.Should().BeLessThan(new TimeSpan(0, 0, 0, 0, 1000), "because the request should have timed out at 200ms");
         }
 
+        [Fact]
+        public async Task get_price_optimization_throws_exception_when_token_request_times_out_and_throw_on_failure_enabled()
+        {
+            var authTokenHandler = CreateAuthTokenHandler(delay: 30, options: new AuthTokenHandlerOptions { Timeout = new TimeSpan(0, 0, 0, 0, 200) });
+            var priceOptimizationHandler = CreatePriceOptimizationHandler(authTokenHandler: authTokenHandler, options: new PriceOptimizationsHandlerOptions { ThrowOnFailure = true });
+            Func<Task> act = async () => await priceOptimizationHandler.GetPriceOptimizationAsync(new GetPriceOptimizationRequest("test", "1111", 9.99m));
+            await act.Should().ThrowAsync<Exception>("because the server auth response exceeded the set timeout");
+        }
+        
 
         [Fact]
         public async Task get_batch_price_optimizations()

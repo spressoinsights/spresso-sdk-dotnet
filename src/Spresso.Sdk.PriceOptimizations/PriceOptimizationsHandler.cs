@@ -51,7 +51,7 @@ namespace Spresso.Sdk.PriceOptimizations
             _cacheDuration = options.CacheDuration;
             _additionalParameters = options.AdditionalParameters;
             _getPriceOptimizationPolicy = CreatePriceOptimizationResiliencyPolicy(options);
-            _getPriceOptimizationsBatchPolicy = GetPriceOptimizationsBatchResiliencyPolicy(options);
+            _getPriceOptimizationsBatchPolicy = CreatePriceOptimizationsBatchResiliencyPolicy(options);
         }
 
         /// <inheritdoc cref="IPriceOptimizationHandler.GetPriceOptimizationAsync"/>
@@ -314,7 +314,7 @@ namespace Spresso.Sdk.PriceOptimizations
             }, e => new GetPriceOptimizationsUserAgentOverridesResponse(e), cancellationToken);
         }
 
-        private IAsyncPolicy<GetBatchPriceOptimizationsResponse> GetPriceOptimizationsBatchResiliencyPolicy(PriceOptimizationsHandlerOptions options)
+        private IAsyncPolicy<GetBatchPriceOptimizationsResponse> CreatePriceOptimizationsBatchResiliencyPolicy(PriceOptimizationsHandlerOptions options)
         {
             return CreateResiliencyPolicy(options,
                 new FallbackOptions<GetBatchPriceOptimizationsResponse>(
@@ -326,6 +326,11 @@ namespace Spresso.Sdk.PriceOptimizations
 
                         if (response!.Exception != null)
                         {
+                            if (options.ThrowOnFailure)
+                            {
+                                throw response.Exception;
+                            }
+                            
                             if (response.Exception is TimeoutRejectedException)
                             {
                                 return Task.FromResult(new GetBatchPriceOptimizationsResponse(PriceOptimizationError.Timeout));
@@ -333,6 +338,10 @@ namespace Spresso.Sdk.PriceOptimizations
                             return Task.FromResult(new GetBatchPriceOptimizationsResponse(PriceOptimizationError.Unknown));
                         }
 
+                        if (options.ThrowOnFailure)
+                        {
+                            throw new Exception($"Request failed.  Error {response.Result.Error}");
+                        }
                         return Task.FromResult(response.Result);
                     },
                     (result, context) => Task.CompletedTask
@@ -351,11 +360,21 @@ namespace Spresso.Sdk.PriceOptimizations
 
                         if (response!.Exception != null)
                         {
+                            if (options.ThrowOnFailure)
+                            {
+                                throw response.Exception;
+                            }
+                            
                             if (response.Exception is TimeoutRejectedException)
                             {
                                 return Task.FromResult(new GetPriceOptimizationResponse(PriceOptimizationError.Timeout));
                             }
                             return Task.FromResult(new GetPriceOptimizationResponse(PriceOptimizationError.Unknown));
+                        }
+
+                        if (options.ThrowOnFailure)
+                        {
+                            throw new Exception($"Request failed.  Error {response.Result.Error}");
                         }
 
                         return Task.FromResult(response.Result);

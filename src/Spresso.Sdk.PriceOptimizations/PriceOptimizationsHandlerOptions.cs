@@ -124,5 +124,10 @@ namespace Spresso.Sdk.PriceOptimizations
         ///     Additional parameters to be sent to the token endpoint for debug/testing purposes
         /// </summary>
         public string AdditionalParameters { get; set; } = string.Empty;
+
+        /// <summary>
+        ///    Throw an exception upon failure.  Default is false.
+        /// </summary>
+        public bool ThrowOnFailure { get; set; } = false;
     }
 }
