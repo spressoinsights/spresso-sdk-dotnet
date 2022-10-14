@@ -16,6 +16,10 @@ SDK that works with the Spresso Price Optimzation APIs to fetch optimal prices f
 
 Note that for best performance, `PriceOptimizationsHandler` should should be a singleton and live for the lifetime of the application.
 
+By default this SDK tries it's best to always return an answer in a fixed amount of time, using default pricing.  The `IsSuccess` will let you know if the response came from the API or was the fallback price.  The `Error` property will inform you of what went wrong.
+
+Fallback behavior can be disabled by setting `PriceOptimizationsHandlerOptions.ThrowOnFailure` to `true`.
+
 #### Quickstart
 ```csharp
 var authTokenHandler = new AuthTokenHandler("myClientId", "mySecret");
