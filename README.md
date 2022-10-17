@@ -42,5 +42,4 @@ To build and run tests, run `nuke test` or `nuke test --target-project <your sdk
 To get a list of sdks, run `nuke listsdks`
 
 For help, run `nuke --help`
-
 If you do not have nuke installed, you can also substitute `nuke` with `build.cmd`, `build.ps1`, or `build.sh`, depending on your platform.
