@@ -95,7 +95,7 @@ namespace Spresso.Sdk.PriceOptimizations
                                 UserId = request.UserId,
                                 DeviceId = request.DeviceId,
                                 ItemId = request.ItemId,
-                                IsOptimizedPrice = false,
+                                IsPriceOptimized = false,
                                 Price = request.DefaultPrice
                             });
                         }
@@ -185,7 +185,7 @@ namespace Spresso.Sdk.PriceOptimizations
                                 UserId = request.UserId,
                                 DeviceId = request.DeviceId,
                                 ItemId = request.ItemId,
-                                IsOptimizedPrice = false,
+                                IsPriceOptimized = false,
                                 Price = request.DefaultPrice
                             }));
                         }
@@ -244,7 +244,7 @@ namespace Spresso.Sdk.PriceOptimizations
 
                     var batchApiRequest = new
                     {
-                        PricingRefs = apiRequests
+                        Items = apiRequests
                     };
                     var requestJson = JsonConvert.SerializeObject(batchApiRequest);
 
@@ -444,7 +444,7 @@ namespace Spresso.Sdk.PriceOptimizations
                 UserId = request.UserId,
                 DeviceId = request.DeviceId,
                 ItemId = request.ItemId,
-                IsOptimizedPrice = false,
+                IsPriceOptimized = false,
                 Price = request.DefaultPrice
             };
         }

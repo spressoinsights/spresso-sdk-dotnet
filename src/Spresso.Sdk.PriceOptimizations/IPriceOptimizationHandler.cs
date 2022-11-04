@@ -111,7 +111,7 @@ namespace Spresso.Sdk.PriceOptimizations
         public string DeviceId { get; set; }
         public string? UserId { get; set; }
         public decimal Price { get; set; }
-        public bool IsOptimizedPrice { get; set; }
+        public bool IsPriceOptimized { get; set; }
     }
 
     public readonly struct GetPriceOptimizationRequest

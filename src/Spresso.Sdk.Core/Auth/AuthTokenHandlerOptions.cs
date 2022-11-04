@@ -5,13 +5,12 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Spresso.Sdk.Core.Connectivity;
+using Spresso.Sdk.Core.Shared;
 
 namespace Spresso.Sdk.Core.Auth
 {
     public class AuthTokenHandlerOptions
     {
-        private const string DefaultSpressoBaseAuthUrl = "https://auth.spresso.com";
-        private const string DefaultSpressoAudience = "https://spresso-api";
         private int _numberOfFailuresBeforeTrippingCircuitBreaker = 10;
 
         private int _numberOfRetries = 3;
@@ -67,12 +66,12 @@ namespace Spresso.Sdk.Core.Auth
         /// <summary>
         ///     The base url for the token endpoint.  This is usually https://auth.spresso.com
         /// </summary>
-        public string SpressoBaseAuthUrl { get; set; } = DefaultSpressoBaseAuthUrl;
+        public string SpressoBaseAuthUrl { get; set; } = Defaults.DefaultSpressoBaseUrl;
 
         /// <summary>
         ///     The audience for the token endpoint.  This is usually https://spresso-api
         /// </summary>
-        public string SpressoAudience { get; set; } = DefaultSpressoAudience;
+        public string SpressoAudience { get; set; } = Defaults.DefaultSpressoApiAudience;
 
         /// <summary>
         ///     The time to wait before failing a token request, including retries. Default is 30 seconds.  Max is 180 seconds.
