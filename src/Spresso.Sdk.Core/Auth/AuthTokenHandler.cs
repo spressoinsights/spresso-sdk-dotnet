@@ -43,7 +43,7 @@ namespace Spresso.Sdk.Core.Auth
             _httpClientFactory = options.SpressoHttpClientFactory;
             _tokenCacheKey = $"Spresso.Auth.AuthKey.{options.TokenGroup}";
             _spressoBaseAuthUrl = options.SpressoBaseAuthUrl;
-            _tokenEndpoint = "oauth/token";
+            _tokenEndpoint = "v1/public/token";
             if (!string.IsNullOrEmpty(options.AdditionalParameters))
             {
                 _tokenEndpoint += "?" + options.AdditionalParameters;

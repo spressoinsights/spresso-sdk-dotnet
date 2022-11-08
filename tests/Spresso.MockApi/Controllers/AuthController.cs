@@ -9,7 +9,7 @@ using JsonClaimValueTypes = Microsoft.IdentityModel.JsonWebTokens.JsonClaimValue
 namespace Spresso.MockApi.Controllers ;
 
     [ApiController]
-    [Route("oauth")]
+    [Route("v1/public")]
     public class AuthController : ControllerBase
     {
         private readonly ILogger<AuthController> _logger;
@@ -20,6 +20,11 @@ namespace Spresso.MockApi.Controllers ;
         }
 
         [HttpPost("token", Name = "token")]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(Auth0TokenResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(void), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(void), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetToken([FromBody] Auth0TokenRequest request, CancellationToken cancellationToken)
         {
             if (Request.Query.ContainsKey("status"))

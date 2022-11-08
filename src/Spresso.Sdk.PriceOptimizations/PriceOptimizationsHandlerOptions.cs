@@ -5,12 +5,12 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Spresso.Sdk.Core.Connectivity;
+using Spresso.Sdk.Core.Shared;
 
 namespace Spresso.Sdk.PriceOptimizations
 {
     public class PriceOptimizationsHandlerOptions
     {
-        private const string DefaultSpressoBaseUrl = "https://api.spresso.com";
         private int _numberOfFailuresBeforeTrippingCircuitBreaker = 100;
         private int _numberOfRetries;
         private TimeSpan _timeout = new TimeSpan(0, 0, 0, seconds: 10);
@@ -40,7 +40,7 @@ namespace Spresso.Sdk.PriceOptimizations
         /// <summary>
         ///     This is the base URL for all Spresso API calls.  Defaults to https://api.spresso.com
         /// </summary>
-        public string SpressoBaseUrl { get; set; } = DefaultSpressoBaseUrl;
+        public string SpressoBaseUrl { get; set; } = Defaults.DefaultSpressoBaseUrl;
 
         /// <summary>
         ///     "Namespace" for price optimizations in cache.  Set this if you have multiple implementations of PriceOptimization

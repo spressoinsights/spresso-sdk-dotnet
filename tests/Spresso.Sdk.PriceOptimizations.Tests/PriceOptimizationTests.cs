@@ -75,7 +75,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
             var response = await priceOptimizationHandler.GetPriceOptimizationAsync(new GetPriceOptimizationRequest("test","1111",9.99m ));
             response.IsSuccess.Should().BeTrue("because the request was successful");
             response.PriceOptimization.HasValue.Should().BeTrue("because the request was successful");
-            response.PriceOptimization.Value.IsOptimizedPrice.Should().BeTrue("because the item is in a campaign, not an override and not a fallback");
+            response.PriceOptimization.Value.IsPriceOptimized.Should().BeTrue("because the item is in a campaign, not an override and not a fallback");
         }
 
 
@@ -86,7 +86,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
             var response = await priceOptimizationHandler.GetPriceOptimizationAsync(new GetPriceOptimizationRequest("test", "1111", 9.99m, overrideToDefaultPrice: true));
             response.IsSuccess.Should().BeTrue("because the request was successful");
             response.PriceOptimization.HasValue.Should().BeTrue("because the request was successful");
-            response.PriceOptimization.Value.IsOptimizedPrice.Should().BeFalse("because the override flag was set");
+            response.PriceOptimization.Value.IsPriceOptimized.Should().BeFalse("because the override flag was set");
         }
 
         [Fact]
@@ -96,7 +96,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
             var response = await priceOptimizationHandler.GetPriceOptimizationAsync(new GetPriceOptimizationRequest("test", "1111", 9.99m));
             response.IsSuccess.Should().BeFalse("because the server returned an 500 status code");
             response.PriceOptimization.HasValue.Should().BeTrue("because the request was successful");
-            response.PriceOptimization.Value.IsOptimizedPrice.Should().BeFalse("because the fallback price was used");
+            response.PriceOptimization.Value.IsPriceOptimized.Should().BeFalse("because the fallback price was used");
         }
 
 
@@ -109,7 +109,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
             sw.Stop();
             response.IsSuccess.Should().BeFalse("because the server response exceeded the set timeout");
             response.PriceOptimization.HasValue.Should().BeTrue("because the request was successful");
-            response.PriceOptimization.Value.IsOptimizedPrice.Should().BeFalse("because the fallback price was used");
+            response.PriceOptimization.Value.IsPriceOptimized.Should().BeFalse("because the fallback price was used");
             sw.Elapsed.Should().BeLessThan(new TimeSpan(0, 0, 0, 0, 1000), "because the request should have timed out at 200ms");
         }
 
@@ -131,7 +131,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
             var response = await priceOptimizationHandler.GetPriceOptimizationAsync(new GetPriceOptimizationRequest("test", "1111", 9.99m));
             response.IsSuccess.Should().BeFalse("because the server returned an 500 status code when attempting to fetch a token");
             response.PriceOptimization.HasValue.Should().BeTrue("because the request was successful");
-            response.PriceOptimization.Value.IsOptimizedPrice.Should().BeFalse("because the fallback price was used");
+            response.PriceOptimization.Value.IsPriceOptimized.Should().BeFalse("because the fallback price was used");
         }
 
 
@@ -154,7 +154,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
             sw.Stop();
             response.IsSuccess.Should().BeFalse("because the server auth response exceeded the set timeout");
             response.PriceOptimization.HasValue.Should().BeTrue("because the request was successful");
-            response.PriceOptimization.Value.IsOptimizedPrice.Should().BeFalse("because the fallback price was used");
+            response.PriceOptimization.Value.IsPriceOptimized.Should().BeFalse("because the fallback price was used");
             sw.Elapsed.Should().BeLessThan(new TimeSpan(0, 0, 0, 0, 1000), "because the request should have timed out at 200ms");
         }
 
@@ -181,7 +181,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
 
             response.IsSuccess.Should().BeTrue("because the request was successful");
             response.PriceOptimizations.Count().Should().Be(3, "because 3 items were requested");
-            response.PriceOptimizations.All(x => x.IsOptimizedPrice).Should().BeTrue("because all prices are expected to be optimized");
+            response.PriceOptimizations.All(x => x.IsPriceOptimized).Should().BeTrue("because all prices are expected to be optimized");
             response.PriceOptimizations.First().ItemId.Should().Be("1111", "because the response should be in the same order as the request");
             response.PriceOptimizations.Last().ItemId.Should().Be("3333", "because the response should be in the same order as the request");
         }
@@ -198,7 +198,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
             }));
 
             response.IsSuccess.Should().BeTrue("because the request was successful");
-            response.PriceOptimizations.All(x => x.IsOptimizedPrice).Should().BeFalse("because the second item was overridden");
+            response.PriceOptimizations.All(x => x.IsPriceOptimized).Should().BeFalse("because the second item was overridden");
         }
 
 
@@ -214,7 +214,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
             }));
 
             response.IsSuccess.Should().BeFalse("because the server returned an 500 status code");
-            response.PriceOptimizations.All(x => x.IsOptimizedPrice).Should().BeFalse("because the fallback price was used");
+            response.PriceOptimizations.All(x => x.IsPriceOptimized).Should().BeFalse("because the fallback price was used");
         }
 
         [Fact]
@@ -230,7 +230,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
             }));
             sw.Stop();
             response.IsSuccess.Should().BeFalse("because the server response exceeded the set timeout");
-            response.PriceOptimizations.All(x => x.IsOptimizedPrice).Should().BeFalse("because the fallback price was used");
+            response.PriceOptimizations.All(x => x.IsPriceOptimized).Should().BeFalse("because the fallback price was used");
             sw.Elapsed.Should().BeLessThan(new TimeSpan(0, 0, 0, 0, 1000), "because the request should have timed out at 200ms");
         }
 
@@ -246,7 +246,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
                 }, "Googlebot"));
 
             response.IsSuccess.Should().BeTrue("because the request was successful");
-            response.PriceOptimizations.All(x => x.IsOptimizedPrice).Should().BeFalse("because the user agent was overridden");
+            response.PriceOptimizations.All(x => x.IsPriceOptimized).Should().BeFalse("because the user agent was overridden");
         }
     }
 }

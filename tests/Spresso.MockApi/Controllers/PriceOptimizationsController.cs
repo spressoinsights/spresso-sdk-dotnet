@@ -7,7 +7,13 @@ namespace Spresso.MockApi.Controllers ;
     public class PriceOptimizationsController : Controller
     {
         [HttpGet("priceOptimizations")]
-        public async Task<IActionResult> GetSinglePriceOptimization([FromQuery] GetSinglePriceOptimizationRequest request,
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(Response<PriceOptimization>), 200)]
+        [ProducesResponseType(typeof(Auth0TokenResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(void), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(void), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetSinglePriceOptimization([FromQuery] GetSinglePriceOptimizationRequest request,
             CancellationToken cancellationToken = default)
         {
             if (Request.Query.ContainsKey("status"))
@@ -22,10 +28,7 @@ namespace Spresso.MockApi.Controllers ;
 
             if (request.OverrideToDefaultPrice)
             {
-                return Ok(new
-                {
-                    data = new PriceOptimization(request.ItemId, request.DeviceId, request.DefaultPrice, false, request.UserId)
-                });
+                return Ok(new Response<PriceOptimization>(new PriceOptimization(request.ItemId, request.DeviceId, request.DefaultPrice, false, request.UserId)));
             }
 
             var defaultPriceInt = (int)(request.DefaultPrice * 100);
@@ -39,7 +42,13 @@ namespace Spresso.MockApi.Controllers ;
         }
 
         [HttpPost("priceOptimizations")]
-        public async Task<IActionResult> GetBatchPriceOptimizations([FromBody] GetBatchPriceOptimizationsRequest request,
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(Response<PriceOptimization[]>), 200)]
+        [ProducesResponseType(typeof(Auth0TokenResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(void), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(void), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetBatchPriceOptimizations([FromBody] GetBatchPriceOptimizationsRequest request,
             CancellationToken cancellationToken = default)
         {
             if (Request.Query.ContainsKey("status"))
@@ -53,13 +62,13 @@ namespace Spresso.MockApi.Controllers ;
             }
 
 
-            if (request.PricingRefs.Length > 100)
+            if (request.Items.Length > 100)
             {
                 return BadRequest("Batch size cannot be greater than 100");
             }
 
-            var response = new List<PriceOptimization>(request.PricingRefs.Length);
-            foreach (var pricingRef in request.PricingRefs)
+            var response = new List<PriceOptimization>(request.Items.Length);
+            foreach (var pricingRef in request.Items)
                 if (pricingRef.OverrideToDefaultPrice)
                 {
                     response.Add(new PriceOptimization(pricingRef.ItemId, pricingRef.DeviceId, pricingRef.DefaultPrice, false, pricingRef.UserId));
@@ -73,10 +82,7 @@ namespace Spresso.MockApi.Controllers ;
                     response.Add(new PriceOptimization(pricingRef.ItemId, pricingRef.DeviceId, price, true, pricingRef.UserId));
                 }
 
-            return Ok(new
-            {
-                Data = response
-            });
+            return Ok(new Response<List<PriceOptimization>>(response));
         }
 
         [HttpGet("userAgents")]
@@ -96,7 +102,7 @@ namespace Spresso.MockApi.Controllers ;
 
         public class GetBatchPriceOptimizationsRequest
         {
-            public GetSinglePriceOptimizationRequest[] PricingRefs { get; set; }
+            public GetSinglePriceOptimizationRequest[] Items { get; set; }
         }
 
         public class GetSinglePriceOptimizationRequest
@@ -108,7 +114,9 @@ namespace Spresso.MockApi.Controllers ;
             public bool OverrideToDefaultPrice { get; set; }
         }
 
-        public record PriceOptimization(string ItemId, string DeviceId, decimal Price, bool IsOptimizedPrice, string? UserId = default);
+        public record PriceOptimization(string ItemId, string DeviceId, decimal Price, bool isPriceOptimized, string? UserId = default);
 
         public record UserAgentRegex(string Name, string Regex);
+
+        public record Response<T>(T Data);
     }
