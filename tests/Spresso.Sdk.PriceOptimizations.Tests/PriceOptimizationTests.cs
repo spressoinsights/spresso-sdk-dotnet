@@ -3,6 +3,7 @@ using System.Net;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Polly.Timeout;
+using Spresso.MockApi;
 using Spresso.Sdk.Core.Auth;
 using Spresso.Sdk.Core.Connectivity;
 using Spresso.Sdk.Core.Tests;

@@ -149,7 +149,7 @@ namespace Spresso.Sdk.PriceOptimizations
     }
 
 
-    public enum PriceOptimizationError
+    public enum PriceOptimizationError: byte
     {
         None,
         AuthError,

@@ -27,6 +27,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_build", "build\_build.cspr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Spresso.Sdk.PriceOptimizations.Tests", "tests\Spresso.Sdk.PriceOptimizations.Tests\Spresso.Sdk.PriceOptimizations.Tests.csproj", "{A0BD2B76-6077-49FE-96A0-A29068A614DC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spresso.Sdk.Benchmarks", "tests\Spresso.Sdk.Benchmarks\Spresso.Sdk.Benchmarks.csproj", "{353111A2-207E-4B08-9920-04C82F8FFF73}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,6 +65,10 @@ Global
 		{A0BD2B76-6077-49FE-96A0-A29068A614DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A0BD2B76-6077-49FE-96A0-A29068A614DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A0BD2B76-6077-49FE-96A0-A29068A614DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{353111A2-207E-4B08-9920-04C82F8FFF73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{353111A2-207E-4B08-9920-04C82F8FFF73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{353111A2-207E-4B08-9920-04C82F8FFF73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{353111A2-207E-4B08-9920-04C82F8FFF73}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -75,6 +81,7 @@ Global
 		{DE91DDA7-40A6-4EA0-85AF-8AAD7A2F3E52} = {75F32CFA-4B2C-428F-9932-FBB4EC302001}
 		{99A4C77A-2FB0-4263-A21F-31C5CCEE2631} = {75F32CFA-4B2C-428F-9932-FBB4EC302001}
 		{A0BD2B76-6077-49FE-96A0-A29068A614DC} = {75F32CFA-4B2C-428F-9932-FBB4EC302001}
+		{353111A2-207E-4B08-9920-04C82F8FFF73} = {75F32CFA-4B2C-428F-9932-FBB4EC302001}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2F675754-3458-4D8D-B800-160BC0817857}

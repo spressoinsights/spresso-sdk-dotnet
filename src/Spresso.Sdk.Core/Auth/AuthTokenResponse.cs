@@ -2,7 +2,7 @@
 
 namespace Spresso.Sdk.Core.Auth
 {
-    public struct AuthTokenResponse
+    public readonly struct AuthTokenResponse
     {
         public string? Token { get; }
         public DateTimeOffset? ExpiresAt { get; }
