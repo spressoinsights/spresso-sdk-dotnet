@@ -44,4 +44,7 @@ To get a list of sdks, run `nuke listsdks`
 For help, run `nuke --help`
 If you do not have nuke installed, you can also substitute `nuke` with `build.cmd`, `build.ps1`, or `build.sh`, depending on your platform.
 
-#### [Benchmarks](/tests/Spresso.Sdk.Benchmarks/History)
+#### Benchmarks
+To run benchmarks, build `tests/Spresso.Sdk.Benchmarks` in `Release` mode, then run `Spresso.Sdk.Benchmarks`.
+
+[Historical Benchmarks](/tests/Spreso.Sdk.Benchmarks/History)
