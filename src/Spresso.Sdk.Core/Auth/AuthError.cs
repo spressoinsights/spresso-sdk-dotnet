@@ -1,6 +1,6 @@
 ﻿namespace Spresso.Sdk.Core.Auth
 {
-    public enum AuthError
+    public enum AuthError : byte
     {
         None,
         InvalidCredentials,

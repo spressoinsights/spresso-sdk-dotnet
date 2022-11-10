@@ -28,7 +28,7 @@ namespace Spresso.Sdk.PriceOptimizations
         Task<GetPriceOptimizationsUserAgentOverridesResponse> GetPriceOptimizationsUserAgentOverridesAsync(CancellationToken cancellationToken = default);
     }
 
-    public readonly struct GetPriceOptimizationsUserAgentOverridesResponse : IPriceOptimizationResult
+    public class GetPriceOptimizationsUserAgentOverridesResponse : IPriceOptimizationResult
     {
         public Regex[] UserAgentRegexes { get; }
         public bool IsSuccess => Error == PriceOptimizationError.None;
@@ -54,7 +54,7 @@ namespace Spresso.Sdk.PriceOptimizations
         public PriceOptimizationError Error { get; }
     }
 
-    public readonly struct GetPriceOptimizationResponse : IPriceOptimizationResult
+    public class GetPriceOptimizationResponse : IPriceOptimizationResult
     {
         public bool IsSuccess => Error == PriceOptimizationError.None;
         public PriceOptimization? PriceOptimization { get; }
@@ -79,7 +79,7 @@ namespace Spresso.Sdk.PriceOptimizations
         }
     }
 
-    public readonly struct GetBatchPriceOptimizationsResponse : IPriceOptimizationResult
+    public class GetBatchPriceOptimizationsResponse : IPriceOptimizationResult
     {
         public bool IsSuccess => Error == PriceOptimizationError.None;
         public PriceOptimizationError Error { get; }
@@ -105,7 +105,7 @@ namespace Spresso.Sdk.PriceOptimizations
     }
 
 
-    public struct PriceOptimization
+    public class PriceOptimization
     {
         public string ItemId { get; set; }
         public string DeviceId { get; set; }
@@ -114,7 +114,7 @@ namespace Spresso.Sdk.PriceOptimizations
         public bool IsPriceOptimized { get; set; }
     }
 
-    public readonly struct GetPriceOptimizationRequest
+    public class GetPriceOptimizationRequest
     {
         public string DeviceId { get; }
         public string ItemId { get; }
@@ -136,7 +136,7 @@ namespace Spresso.Sdk.PriceOptimizations
     }
 
 
-    public readonly struct GetBatchPriceOptimizationsRequest
+    public class GetBatchPriceOptimizationsRequest
     {
         public IEnumerable<GetPriceOptimizationRequest> Requests { get; }
         public string? UserAgent { get; }
@@ -149,7 +149,7 @@ namespace Spresso.Sdk.PriceOptimizations
     }
 
 
-    public enum PriceOptimizationError
+    public enum PriceOptimizationError: byte
     {
         None,
         AuthError,

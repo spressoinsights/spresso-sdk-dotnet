@@ -143,8 +143,8 @@ namespace Spresso.Sdk.PriceOptimizations
 
             if (executionResult.IsSuccess)
             {
-                _logger.LogDebug("{0} found result [device: {1}, item: {2}]", logNamespace, executionResult.PriceOptimization!.Value.DeviceId,
-                    executionResult.PriceOptimization!.Value.ItemId);
+                _logger.LogDebug("{0} found result [device: {1}, item: {2}]", logNamespace, executionResult.PriceOptimization!.DeviceId,
+                    executionResult.PriceOptimization!.ItemId);
                 return executionResult;
             }
 
@@ -489,23 +489,23 @@ namespace Spresso.Sdk.PriceOptimizations
             return apiResponse.Data;
         }
 
-        private struct GetPriceOptimizationApiResponse
+        private class GetPriceOptimizationApiResponse
         {
             public PriceOptimization Data { get; set; }
         }
 
-        private struct GetBatchPriceOptimizationsApiResponse
+        private class GetBatchPriceOptimizationsApiResponse
         {
             public PriceOptimization[] Data { get; set; }
         }
 
-        private struct UserAgentRegex
+        private class UserAgentRegex
         {
             public string Name { get; set; }
             public string Regex { get; set; }
         }
 
-        private struct GetUserAgentRegexesApiResponse
+        private class GetUserAgentRegexesApiResponse
         {
             public UserAgentRegex[] Data { get; set; }
         }
