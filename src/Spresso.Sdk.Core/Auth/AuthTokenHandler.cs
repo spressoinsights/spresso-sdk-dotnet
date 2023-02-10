@@ -139,8 +139,10 @@ namespace Spresso.Sdk.Core.Auth
                             fallbackPredicate: r => !r.IsSuccess,
                             fallbackAction: (tokenResponse, ctx, cancellationToken) =>
                             {
-                                _logger.LogError("Token request failed.  Error {0}.  Exception (if applicable): {1}", tokenResponse?.Result.Error,
-                                    tokenResponse?.Exception?.Message);
+                                var error = tokenResponse.Result?.Error;
+
+                                _logger.LogError("Token request failed.  Error {0}.  Exception (if applicable): {1}", error,
+                                    tokenResponse.Exception?.Message);
 
                                 if (tokenResponse.Exception != null)
                                 {
@@ -158,10 +160,10 @@ namespace Spresso.Sdk.Core.Auth
 
                                 if (options.ThrowOnTokenFailure)
                                 {
-                                    throw new Exception($"Token request failed.  Error {tokenResponse?.Result.Error}");
+                                    throw new Exception($"Token request failed.  Error {error}");
                                 }
                                 
-                                return Task.FromResult(tokenResponse.Result);
+                                return Task.FromResult(tokenResponse.Result!);
                             },
                             onFallback: (result, context) => Task.CompletedTask)
                 );

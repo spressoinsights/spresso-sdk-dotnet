@@ -302,11 +302,11 @@ namespace Spresso.Sdk.PriceOptimizations
             var token = tokenResponse.Token!;
             var httpClient = GetHttpClient(token);
 
-            var query = "/v1/userAgents";
+            var query = "/v1/priceOptimizationOrgConfig";
             return await ExecuteGetApiRequestAsync(httpClient, query, jsonResponse =>
             {
-                var apiResponse = CreateUserAgentRegexes(jsonResponse);
-                var compiledRegexes = apiResponse.Data.Select(r => new Regex(r.Regex, RegexOptions.Singleline | RegexOptions.Compiled)).ToArray();
+                var apiResponse = CreateUserAgentRegexes(jsonResponse).Data.UserAgentBlacklist.Where(r=>r.Status.Equals("active", StringComparison.InvariantCultureIgnoreCase));
+                var compiledRegexes = apiResponse.Select(r => new Regex(r.Regexp, RegexOptions.Singleline | RegexOptions.Compiled)).ToArray();
 
                 var getPriceOptimizationsUserAgentOverridesResponse = new GetPriceOptimizationsUserAgentOverridesResponse(compiledRegexes);
                 _localCache.Set(cacheKey, getPriceOptimizationsUserAgentOverridesResponse, _cacheDuration);
@@ -322,7 +322,7 @@ namespace Spresso.Sdk.PriceOptimizations
                     (response, ctx, ct) =>
                     {
                         _logger.LogError("@@{0}@@ Token request failed.  Error {1}.  Exception (if applicable): {2}",
-                            nameof(GetBatchPriceOptimizationsAsync), response?.Result.Error, response?.Exception?.Message);
+                            nameof(GetBatchPriceOptimizationsAsync), response?.Result?.Error, response?.Exception?.Message);
 
                         if (response!.Exception != null)
                         {
@@ -356,7 +356,7 @@ namespace Spresso.Sdk.PriceOptimizations
                     (response, ctx, ct) =>
                     {
                         _logger.LogError("@@{0}@@ Token request failed.  Error {1}.  Exception (if applicable): {2}",
-                            nameof(GetPriceOptimizationAsync), response?.Result.Error, response?.Exception?.Message);
+                            nameof(GetPriceOptimizationAsync), response?.Result?.Error, response?.Exception?.Message);
 
                         if (response!.Exception != null)
                         {
@@ -502,12 +502,18 @@ namespace Spresso.Sdk.PriceOptimizations
         private class UserAgentRegex
         {
             public string Name { get; set; }
-            public string Regex { get; set; }
+            public string Regexp { get; set; }
+            public string Status { get; set; }
         }
 
         private class GetUserAgentRegexesApiResponse
         {
-            public UserAgentRegex[] Data { get; set; }
+            public class GetUserAgentRegexesApiResponseData
+            {
+                public UserAgentRegex[] UserAgentBlacklist { get; set; }
+            }
+           
+            public GetUserAgentRegexesApiResponseData Data { get; set; }
         }
     }
 }
