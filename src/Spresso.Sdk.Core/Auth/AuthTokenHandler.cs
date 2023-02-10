@@ -140,6 +140,10 @@ namespace Spresso.Sdk.Core.Auth
                             fallbackAction: (tokenResponse, ctx, cancellationToken) =>
                             {
                                 var error = tokenResponse.Result?.Error;
+                                if (tokenResponse.Exception is TimeoutRejectedException)
+                                {
+                                    error = AuthError.Timeout;
+                                }
 
                                 _logger.LogError("Token request failed.  Error {0}.  Exception (if applicable): {1}", error,
                                     tokenResponse.Exception?.Message);
@@ -151,11 +155,7 @@ namespace Spresso.Sdk.Core.Auth
                                         throw tokenResponse.Exception;
                                     }
                                     
-                                    if (tokenResponse.Exception is TimeoutRejectedException)
-                                    {
-                                        return Task.FromResult(new AuthTokenResponse(AuthError.Timeout));
-                                    }
-                                    return Task.FromResult(new AuthTokenResponse(AuthError.Unknown));
+                                    return Task.FromResult(new AuthTokenResponse(error ?? AuthError.Unknown));
                                 }
 
                                 if (options.ThrowOnTokenFailure)

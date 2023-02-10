@@ -321,8 +321,14 @@ namespace Spresso.Sdk.PriceOptimizations
                     r => !r.IsSuccess,
                     (response, ctx, ct) =>
                     {
+                        var error = response?.Result?.Error;
+                        if (response!.Exception is TimeoutRejectedException)
+                        {
+                            error = PriceOptimizationError.Timeout;
+                        }
+
                         _logger.LogError("@@{0}@@ Token request failed.  Error {1}.  Exception (if applicable): {2}",
-                            nameof(GetBatchPriceOptimizationsAsync), response?.Result?.Error, response?.Exception?.Message);
+                            nameof(GetBatchPriceOptimizationsAsync), error, response?.Exception?.Message);
 
                         if (response!.Exception != null)
                         {
@@ -331,18 +337,14 @@ namespace Spresso.Sdk.PriceOptimizations
                                 throw response.Exception;
                             }
                             
-                            if (response.Exception is TimeoutRejectedException)
-                            {
-                                return Task.FromResult(new GetBatchPriceOptimizationsResponse(PriceOptimizationError.Timeout));
-                            }
-                            return Task.FromResult(new GetBatchPriceOptimizationsResponse(PriceOptimizationError.Unknown));
+                            return Task.FromResult(new GetBatchPriceOptimizationsResponse(error ?? PriceOptimizationError.Unknown));
                         }
 
                         if (options.ThrowOnFailure)
                         {
-                            throw new Exception($"Request failed.  Error {response.Result.Error}");
+                            throw new Exception($"Request failed.  Error {error}");
                         }
-                        return Task.FromResult(response.Result);
+                        return Task.FromResult(response.Result!);
                     },
                     (result, context) => Task.CompletedTask
                     ), nameof(GetBatchPriceOptimizationsAsync));
@@ -355,8 +357,14 @@ namespace Spresso.Sdk.PriceOptimizations
                     r => !r.IsSuccess,
                     (response, ctx, ct) =>
                     {
+                        var error = response?.Result?.Error;
+                        if (response?.Exception is TimeoutRejectedException)
+                        {
+                            error = PriceOptimizationError.Timeout;
+                        }
+
                         _logger.LogError("@@{0}@@ Token request failed.  Error {1}.  Exception (if applicable): {2}",
-                            nameof(GetPriceOptimizationAsync), response?.Result?.Error, response?.Exception?.Message);
+                            nameof(GetPriceOptimizationAsync), error, response?.Exception?.Message);
 
                         if (response!.Exception != null)
                         {
@@ -365,19 +373,15 @@ namespace Spresso.Sdk.PriceOptimizations
                                 throw response.Exception;
                             }
                             
-                            if (response.Exception is TimeoutRejectedException)
-                            {
-                                return Task.FromResult(new GetPriceOptimizationResponse(PriceOptimizationError.Timeout));
-                            }
-                            return Task.FromResult(new GetPriceOptimizationResponse(PriceOptimizationError.Unknown));
+                            return Task.FromResult(new GetPriceOptimizationResponse(error ?? PriceOptimizationError.Unknown));
                         }
 
                         if (options.ThrowOnFailure)
                         {
-                            throw new Exception($"Request failed.  Error {response.Result.Error}");
+                            throw new Exception($"Request failed.  Error {error}");
                         }
 
-                        return Task.FromResult(response.Result);
+                        return Task.FromResult(response.Result!);
                     },
                     (result, context) => Task.CompletedTask
                     ), nameof(GetPriceOptimizationAsync));
