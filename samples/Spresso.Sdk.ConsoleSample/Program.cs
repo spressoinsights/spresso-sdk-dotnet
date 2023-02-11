@@ -37,7 +37,7 @@ public class Program
         }
         else
         {
-            Console.WriteLine("Could not get defailt optimized prices.  Using fallback prices");
+            Console.WriteLine("Could not get default optimized prices.  Using fallback prices");
             foreach (var po in batchResponse.PriceOptimizations)
                 PrintPriceOptimization(po);
         }
