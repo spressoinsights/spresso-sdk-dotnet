@@ -9,17 +9,18 @@ public class PriceOptimizationsController : Controller
     [HttpGet("priceOptimizations")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(Response<PriceOptimization>), 200)]
-    [ProducesResponseType(typeof(Auth0TokenResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(OAuthTokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(void), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(void), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetSinglePriceOptimization([FromQuery] GetSinglePriceOptimizationRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (Request.Query.ContainsKey("status"))
-        {
-            return StatusCode(int.Parse(Request.Query["status"]));
-        }
+        if (!TokenValidator.ValidateToken(Request))
+            return Unauthorized();
+
+
+        if (Request.Query.ContainsKey("status")) return StatusCode(int.Parse(Request.Query["status"]));
         if (Request.Query.ContainsKey("delay"))
         {
             var delay = int.Parse(Request.Query["delay"]);
@@ -27,9 +28,8 @@ public class PriceOptimizationsController : Controller
         }
 
         if (request.OverrideToDefaultPrice)
-        {
-            return Ok(new Response<PriceOptimization>(new PriceOptimization(request.ItemId, request.DeviceId, request.DefaultPrice, false, request.UserId)));
-        }
+            return Ok(new Response<PriceOptimization>(new PriceOptimization(request.ItemId, request.DeviceId,
+                request.DefaultPrice, false, request.UserId)));
 
         var defaultPriceInt = (int)(request.DefaultPrice * 100);
         var rangeInt = (int)(0.1m * defaultPriceInt);
@@ -44,17 +44,17 @@ public class PriceOptimizationsController : Controller
     [HttpPost("priceOptimizations")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(Response<PriceOptimization[]>), 200)]
-    [ProducesResponseType(typeof(Auth0TokenResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(OAuthTokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(void), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(void), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetBatchPriceOptimizations([FromBody] GetBatchPriceOptimizationsRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (Request.Query.ContainsKey("status"))
-        {
-            return StatusCode(int.Parse(Request.Query["status"]));
-        }
+        if (!TokenValidator.ValidateToken(Request))
+            return Unauthorized();
+
+        if (Request.Query.ContainsKey("status")) return StatusCode(int.Parse(Request.Query["status"]));
         if (Request.Query.ContainsKey("delay"))
         {
             var delay = int.Parse(Request.Query["delay"]);
@@ -62,16 +62,14 @@ public class PriceOptimizationsController : Controller
         }
 
 
-        if (request.Items.Length > 100)
-        {
-            return BadRequest("Batch size cannot be greater than 100");
-        }
+        if (request.Items.Length > 100) return BadRequest("Batch size cannot be greater than 100");
 
         var response = new List<PriceOptimization>(request.Items.Length);
         foreach (var pricingRef in request.Items)
             if (pricingRef.OverrideToDefaultPrice)
             {
-                response.Add(new PriceOptimization(pricingRef.ItemId, pricingRef.DeviceId, pricingRef.DefaultPrice, false, pricingRef.UserId));
+                response.Add(new PriceOptimization(pricingRef.ItemId, pricingRef.DeviceId, pricingRef.DefaultPrice,
+                    false, pricingRef.UserId));
             }
             else
             {
@@ -79,16 +77,20 @@ public class PriceOptimizationsController : Controller
                 var rangeInt = (int)(0.1m * defaultPriceInt);
 
                 var price = Random.Shared.Next(defaultPriceInt - rangeInt, defaultPriceInt + rangeInt) / 100m;
-                response.Add(new PriceOptimization(pricingRef.ItemId, pricingRef.DeviceId, price, true, pricingRef.UserId));
+                response.Add(new PriceOptimization(pricingRef.ItemId, pricingRef.DeviceId, price, true,
+                    pricingRef.UserId));
             }
 
         return Ok(new Response<List<PriceOptimization>>(response));
     }
 
     [HttpGet("priceOptimizationOrgConfig")]
-    public async Task<IActionResult> GetUserAgents(CancellationToken cancellationToken = default)
+    public async Task<IActionResult> GetPriceOptimizationOrgConfig(CancellationToken cancellationToken = default)
     {
-   
+        if (!TokenValidator.ValidateToken(Request))
+            return Unauthorized();
+
+
         return Ok(new
         {
             Data = new
@@ -117,7 +119,8 @@ public class PriceOptimizationsController : Controller
         public bool OverrideToDefaultPrice { get; set; }
     }
 
-    public record PriceOptimization(string ItemId, string DeviceId, decimal Price, bool isPriceOptimized, string? UserId = default);
+    public record PriceOptimization(string ItemId, string DeviceId, decimal Price, bool isPriceOptimized,
+        string? UserId = default);
 
 
     public record UserAgentBlacklistItem(string Name, bool IsDefault, string Regexp, int Status);
