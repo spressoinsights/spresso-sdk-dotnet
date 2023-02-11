@@ -3,7 +3,7 @@
 namespace Spresso.MockApi.Controllers;
 
 [ApiController]
-[Route("v1")]
+[Route("pim/v1")]
 public class PriceOptimizationsController : Controller
 {
     [HttpGet("priceOptimizations")]
@@ -96,8 +96,8 @@ public class PriceOptimizationsController : Controller
                 OrgId = "org_FakeOrg",
                 UserAgentBlacklist = new[]
                 {
-                    new UserAgentBlacklistItem("Googlebot", false, "Googlebot+", "ACTIVE"),
-                    new UserAgentBlacklistItem("Storebot-Google", false, "Storebot-Google+", "ACTIVE")
+                    new UserAgentBlacklistItem("Googlebot", false, "Googlebot+", 0),
+                    new UserAgentBlacklistItem("Storebot-Google", false, "Storebot-Google+", 9)
                 }
             }
         });
@@ -120,7 +120,7 @@ public class PriceOptimizationsController : Controller
     public record PriceOptimization(string ItemId, string DeviceId, decimal Price, bool isPriceOptimized, string? UserId = default);
 
 
-    public record UserAgentBlacklistItem(string Name, bool IsDefault, string Regexp, string Status);
+    public record UserAgentBlacklistItem(string Name, bool IsDefault, string Regexp, int Status);
 
     public record Response<T>(T Data);
 }

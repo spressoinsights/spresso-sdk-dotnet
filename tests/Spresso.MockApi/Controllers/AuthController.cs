@@ -9,7 +9,7 @@ using JsonClaimValueTypes = Microsoft.IdentityModel.JsonWebTokens.JsonClaimValue
 namespace Spresso.MockApi.Controllers ;
 
     [ApiController]
-    [Route("v1/public")]
+    [Route("identity/v1/public")]
     public class AuthController : ControllerBase
     {
         private readonly ILogger<AuthController> _logger;

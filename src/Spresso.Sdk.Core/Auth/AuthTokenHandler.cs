@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Distributed;
@@ -26,8 +23,8 @@ namespace Spresso.Sdk.Core.Auth
         private readonly string _spressoBaseAuthUrl;
         private readonly string _tokenCacheKey;
         private readonly string _tokenEndpoint;
-        private readonly IAsyncPolicy<AuthTokenResponse> _tokenResiliencyPolicy;
         private readonly string _tokenRequest;
+        private readonly IAsyncPolicy<AuthTokenResponse> _tokenResiliencyPolicy;
 
 
         /// <summary>
@@ -43,11 +40,9 @@ namespace Spresso.Sdk.Core.Auth
             _httpClientFactory = options.SpressoHttpClientFactory;
             _tokenCacheKey = $"Spresso.Auth.AuthKey.{options.TokenGroup}";
             _spressoBaseAuthUrl = options.SpressoBaseAuthUrl;
-            _tokenEndpoint = "v1/public/token";
+            _tokenEndpoint = "identity/v1/public/token";
             if (!string.IsNullOrEmpty(options.AdditionalParameters))
-            {
                 _tokenEndpoint += "?" + options.AdditionalParameters;
-            }
             var spressoAudience = options.SpressoAudience;
             var tokenRequestBuilder = new Dictionary<string, string>
             {
@@ -58,9 +53,7 @@ namespace Spresso.Sdk.Core.Auth
             };
 
             if (options.Scopes != null && options.Scopes.Length > 0)
-            {
                 tokenRequestBuilder.Add("scope", string.Join(" ", options.Scopes));
-            }
 
             _cache = options.Cache!;
             _tokenRequest = JsonConvert.SerializeObject(tokenRequestBuilder);
@@ -69,7 +62,7 @@ namespace Spresso.Sdk.Core.Auth
             _tokenResiliencyPolicy = CreateTokenResiliencyPolicy(options);
         }
 
-       /// <inheritdoc cref="IAuthTokenHandler.GetTokenAsync"/>
+        /// <inheritdoc cref="IAuthTokenHandler.GetTokenAsync" />
         public async Task<AuthTokenResponse> GetTokenAsync(CancellationToken cancellationToken = default)
         {
             return await _tokenResiliencyPolicy.ExecuteAsync(async () =>
@@ -80,19 +73,20 @@ namespace Spresso.Sdk.Core.Auth
 
 
                 _logger.LogDebug("@@{0}@@ Fetching token", nameof(GetTokenAsync));
-                
+
                 return await httpClient.ExecutePostApiRequestAsync(_tokenEndpoint, _tokenRequest,
-                    onSuccessFunc: async (auth0TokenResponseJson, statusCode) =>
+                    async (auth0TokenResponseJson, statusCode) =>
                     {
                         _logger.LogDebug("@@{0}@@ Token status code {1}", nameof(GetTokenAsync), statusCode);
                         var tokenResponse = CreateTokenResponse(auth0TokenResponseJson);
-                        await _cache.SetStringAsync(_tokenCacheKey, auth0TokenResponseJson, new DistributedCacheEntryOptions
-                        {
-                            AbsoluteExpiration = tokenResponse.ExpiresAt!.Value.Subtract(new TimeSpan(0, 5, 0))
-                        }, cancellationToken);
+                        await _cache.SetStringAsync(_tokenCacheKey, auth0TokenResponseJson,
+                            new DistributedCacheEntryOptions
+                            {
+                                AbsoluteExpiration = tokenResponse.ExpiresAt!.Value.Subtract(new TimeSpan(0, 5, 0))
+                            }, cancellationToken);
                         return tokenResponse;
                     },
-                    onAuthErrorFailure: (statusCode) =>
+                    statusCode =>
                     {
                         _logger.LogDebug("@@{0}@@ Token status code {1}", nameof(GetTokenAsync), statusCode);
                         switch (statusCode)
@@ -102,21 +96,23 @@ namespace Spresso.Sdk.Core.Auth
                             default:
                                 return new AuthTokenResponse(AuthError.InvalidScopes);
                         }
-
                     },
-                    onBadRequestFailure: () =>
+                    () =>
                     {
-                        _logger.LogError("@@{0}@@ Token status code {1}", nameof(GetTokenAsync), HttpStatusCode.BadRequest);
+                        _logger.LogError("@@{0}@@ Token status code {1}", nameof(GetTokenAsync),
+                            HttpStatusCode.BadRequest);
                         return new AuthTokenResponse(AuthError.Unknown);
                     },
-                    onTimeoutFailure: exception =>
+                    exception =>
                     {
-                        _logger.LogError("@@{0}@@ Error getting token.  Exception: {1}", nameof(GetTokenAsync), exception);
+                        _logger.LogError("@@{0}@@ Error getting token.  Exception: {1}", nameof(GetTokenAsync),
+                            exception);
                         return new AuthTokenResponse(AuthError.Timeout);
                     },
-                    onUnknownFailure: (exception, httpStatusCode) =>
+                    (exception, httpStatusCode) =>
                     {
-                        _logger.LogError("@@{0}@@ Error getting token.  HttpStatusCode: {1}, Exception: {2}", nameof(GetTokenAsync), httpStatusCode, exception);
+                        _logger.LogError("@@{0}@@ Error getting token.  HttpStatusCode: {1}, Exception: {2}",
+                            nameof(GetTokenAsync), httpStatusCode, exception);
                         return new AuthTokenResponse(AuthError.Unknown);
                     },
                     cancellationToken);
@@ -128,51 +124,44 @@ namespace Spresso.Sdk.Core.Auth
             var retryErrors = new[] { AuthError.Timeout, AuthError.Unknown };
 
             return ResiliencyPolicyBuilder.BuildPolicy(
-                retryOptions: new RetryOptions<AuthTokenResponse>(t => !t.IsSuccess && retryErrors.Contains(t.Error), options.NumberOfRetries),
+                new RetryOptions<AuthTokenResponse>(t => !t.IsSuccess && retryErrors.Contains(t.Error),
+                    options.NumberOfRetries),
                 new TimeoutOptions(options.Timeout),
-                circuitBreakerOptions: new CircuitBreakerOptions<AuthTokenResponse>(t => !t.IsSuccess && retryErrors.Contains(t.Error),
+                new CircuitBreakerOptions<AuthTokenResponse>(t => !t.IsSuccess && retryErrors.Contains(t.Error),
                     options.NumberOfFailuresBeforeTrippingCircuitBreaker,
                     options.CircuitBreakerBreakDuration,
-                    onBreakAction: (state, ts, ctx) => { _logger.LogError("Token circuit breaker tripped"); },
-                    onResetAction: ctx => { _logger.LogInformation("Token circuit breaker reset"); }),
-                        fallbackOptions: new FallbackOptions<AuthTokenResponse>(
-                            fallbackPredicate: r => !r.IsSuccess,
-                            fallbackAction: (tokenResponse, ctx, cancellationToken) =>
-                            {
-                                var error = tokenResponse.Result?.Error;
-                                if (tokenResponse.Exception is TimeoutRejectedException)
-                                {
-                                    error = AuthError.Timeout;
-                                }
+                    (state, ts, ctx) => { _logger.LogError("Token circuit breaker tripped"); },
+                    ctx => { _logger.LogInformation("Token circuit breaker reset"); }),
+                new FallbackOptions<AuthTokenResponse>(
+                    r => !r.IsSuccess,
+                    (tokenResponse, ctx, cancellationToken) =>
+                    {
+                        var error = tokenResponse.Result?.Error;
+                        if (tokenResponse.Exception is TimeoutRejectedException) error = AuthError.Timeout;
 
-                                _logger.LogError("Token request failed.  Error {0}.  Exception (if applicable): {1}", error,
-                                    tokenResponse.Exception?.Message);
+                        _logger.LogError("Token request failed.  Error {0}.  Exception (if applicable): {1}", error,
+                            tokenResponse.Exception?.Message);
 
-                                if (tokenResponse.Exception != null)
-                                {
-                                    if (options.ThrowOnTokenFailure)
-                                    {
-                                        throw tokenResponse.Exception;
-                                    }
-                                    
-                                    return Task.FromResult(new AuthTokenResponse(error ?? AuthError.Unknown));
-                                }
+                        if (tokenResponse.Exception != null)
+                        {
+                            if (options.ThrowOnTokenFailure) throw tokenResponse.Exception;
 
-                                if (options.ThrowOnTokenFailure)
-                                {
-                                    throw new Exception($"Token request failed.  Error {error}");
-                                }
-                                
-                                return Task.FromResult(tokenResponse.Result!);
-                            },
-                            onFallback: (result, context) => Task.CompletedTask)
-                );
+                            return Task.FromResult(new AuthTokenResponse(error ?? AuthError.Unknown));
+                        }
+
+                        if (options.ThrowOnTokenFailure) throw new Exception($"Token request failed.  Error {error}");
+
+                        return Task.FromResult(tokenResponse.Result!);
+                    },
+                    (result, context) => Task.CompletedTask)
+            );
         }
 
         private AuthTokenResponse CreateTokenResponse(string auth0TokenResponseJson)
         {
             var auth0TokenResponse = JsonConvert.DeserializeObject<Auth0TokenResponse>(auth0TokenResponseJson);
-            return new AuthTokenResponse(auth0TokenResponse.access_token!, DateTimeOffset.Now.AddSeconds(auth0TokenResponse.expires_in));
+            return new AuthTokenResponse(auth0TokenResponse.access_token!,
+                DateTimeOffset.Now.AddSeconds(auth0TokenResponse.expires_in));
         }
 
         private class Auth0TokenResponse

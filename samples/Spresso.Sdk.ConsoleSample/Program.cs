@@ -23,12 +23,16 @@ public class Program
             userAgent: "Mozilla/5.0 (X11; Linux x86_64; Storebot-Google/1.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36");
         var secondRequest = new GetPriceOptimizationRequest("123", "789", 18.95m);
 
+        var singleResponse = await priceOptimizationHandler.GetPriceOptimizationAsync(singleRequest);
+        if (singleResponse.IsSuccess)
+        {
+            PrintPriceOptimization(singleResponse.PriceOptimization!);
+        }
 
 
-        var batchRequest = new GetBatchPriceOptimizationsRequest(new[] { singleRequest, secondRequest });
+        var batchRequest = new GetBatchPriceOptimizationsRequest(new[] { singleRequest, secondRequest }, userAgent: "Gio's Computer");
         var batchResponse = await priceOptimizationHandler.GetBatchPriceOptimizationsAsync(batchRequest);
-
-
+   
         if (batchResponse.IsSuccess)
         {
             Console.WriteLine("Optimized Prices");
@@ -57,7 +61,9 @@ public class Program
                     Cache = sp.GetRequiredService<IDistributedCache>(),
                     AdditionalParameters = "",
                     SpressoBaseAuthUrl = Environment.GetEnvironmentVariable("SPRESSO_BASE_AUTH_URL"),
-                    Logger = sp.GetService<ILogger<IAuthTokenHandler>>()
+                    Logger = sp.GetService<ILogger<IAuthTokenHandler>>(),
+                    Timeout = new TimeSpan(0, 0, 179),
+                    HttpTimeout = new TimeSpan(0, 0, 90)
                 });
                 services.AddSingleton<IAuthTokenHandler, AuthTokenHandler>(
                     sp => new AuthTokenHandler("test123", "secret", sp.GetRequiredService<AuthTokenHandlerOptions>()));
@@ -68,7 +74,8 @@ public class Program
                             SpressoBaseUrl = Environment.GetEnvironmentVariable("SPRESSO_BASE_AUTH_URL"),
                             DistributedCache = sp.GetRequiredService<IDistributedCache>(),
                             AdditionalParameters = "",
-                            Timeout = new TimeSpan(1, 0, 0),
+                            Timeout = new TimeSpan(0, 0, 179),
+                            HttpTimeout = new TimeSpan(0,0,90),
                             Logger = sp.GetService<ILogger<IPriceOptimizationHandler>>()
                         });
                 services.AddSingleton<IPriceOptimizationHandler, PriceOptimizationsHandler>();
