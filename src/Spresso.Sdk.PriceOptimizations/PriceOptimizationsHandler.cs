@@ -406,11 +406,11 @@ namespace Spresso.Sdk.PriceOptimizations
             Func<PriceOptimizationError, T> onFailureFunc, CancellationToken cancellationToken)
         {
             return httpClient.ExecutePostApiRequestAsync(requestUri, requestJson,
-                (apiResponseJson, httpStatus) => onSuccessFunc(apiResponseJson),
-                statusCode => onFailureFunc(PriceOptimizationError.AuthError),
-                () => onFailureFunc(PriceOptimizationError.BadRequest),
-                exception => onFailureFunc(PriceOptimizationError.Timeout),
-                (exception, code) => onFailureFunc(PriceOptimizationError.Unknown),
+                onSuccessFunc: (apiResponseJson, httpStatus) => onSuccessFunc(apiResponseJson),
+                onAuthErrorFailure: statusCode => onFailureFunc(PriceOptimizationError.AuthError),
+                onBadRequestFailure: () => onFailureFunc(PriceOptimizationError.BadRequest),
+                onTimeoutFailure: exception => onFailureFunc(PriceOptimizationError.Timeout),
+                onUnknownFailure: (exception, code) => onFailureFunc(PriceOptimizationError.Unknown),
                 cancellationToken);
         }
 
@@ -419,11 +419,11 @@ namespace Spresso.Sdk.PriceOptimizations
             Func<PriceOptimizationError, T> onFailureFunc, CancellationToken cancellationToken)
         {
             return httpClient.ExecuteGetApiRequestAsync(requestUri,
-                (apiResponseJson, httpStatus) => onSuccessFunc(apiResponseJson),
-                statusCode => onFailureFunc(PriceOptimizationError.AuthError),
-                () => onFailureFunc(PriceOptimizationError.BadRequest),
-                exception => onFailureFunc(PriceOptimizationError.Timeout),
-                (exception, code) => onFailureFunc(PriceOptimizationError.Unknown),
+                onSuccessFunc: (apiResponseJson, httpStatus) => onSuccessFunc(apiResponseJson),
+                onAuthErrorFailure: statusCode => onFailureFunc(PriceOptimizationError.AuthError),
+                onBadRequestFailure: () => onFailureFunc(PriceOptimizationError.BadRequest),
+                onTimeoutFailure: exception => onFailureFunc(PriceOptimizationError.Timeout),
+                onUnknownFailure: (exception, code) => onFailureFunc(PriceOptimizationError.Unknown),
                 cancellationToken);
         }
 
