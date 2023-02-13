@@ -25,6 +25,8 @@ namespace Spresso.Sdk.Core.Auth
         private readonly string _tokenEndpoint;
         private readonly string _tokenRequest;
         private readonly IAsyncPolicy<AuthTokenResponse> _tokenResiliencyPolicy;
+        private readonly TimeSpan _tokenExpirationLeeway =
+                new TimeSpan(0, 5, 0);
 
 
         /// <summary>
@@ -79,7 +81,17 @@ namespace Spresso.Sdk.Core.Auth
                 {
                     _logger.LogDebug("{0} cache hit", nameof(GetTokenAsync));
 
-                    return CreateTokenResponse(cachedToken);
+                    var tokenResponse = CreateTokenResponse(cachedToken);
+                    if (tokenResponse.ExpiresAt > DateTimeOffset.UtcNow.Subtract(_tokenExpirationLeeway))
+                    {
+                        return tokenResponse;
+                    }
+                    else
+                    {
+                        // this shouldn't really ever happen unless the underlying cache technology returns objects past the TTL
+                        _logger.LogDebug("{0} cached token within the leeway period.  Fetching new token.", nameof(GetTokenAsync));
+                    }
+                   
                 }
                 else
                 {
@@ -94,7 +106,7 @@ namespace Spresso.Sdk.Core.Auth
                         await _cache.SetStringAsync(_tokenCacheKey, auth0TokenResponseJson,
                             new DistributedCacheEntryOptions
                             {
-                                AbsoluteExpiration = tokenResponse.ExpiresAt!.Value.Subtract(new TimeSpan(0, 5, 0))
+                                AbsoluteExpiration = tokenResponse.ExpiresAt!.Value.Subtract(_tokenExpirationLeeway)
                             }, cancellationToken);
                         return tokenResponse;
                     },
