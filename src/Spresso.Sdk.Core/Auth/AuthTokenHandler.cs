@@ -74,6 +74,18 @@ namespace Spresso.Sdk.Core.Auth
 
                 _logger.LogDebug("@@{0}@@ Fetching token", nameof(GetTokenAsync));
 
+                var cachedToken = await _cache.GetStringAsync(_tokenCacheKey, cancellationToken);
+                if (cachedToken != null)
+                {
+                    _logger.LogDebug("{0} cache hit", nameof(GetTokenAsync));
+
+                    return CreateTokenResponse(cachedToken);
+                }
+                else
+                {
+                    _logger.LogDebug("{0} cache miss", nameof(GetTokenAsync));
+                }
+
                 return await httpClient.ExecutePostApiRequestAsync(_tokenEndpoint, _tokenRequest,
                     async (auth0TokenResponseJson, statusCode) =>
                     {
