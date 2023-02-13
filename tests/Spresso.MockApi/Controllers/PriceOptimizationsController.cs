@@ -16,16 +16,17 @@ public class PriceOptimizationsController : Controller
     public async Task<IActionResult> GetSinglePriceOptimization([FromQuery] GetSinglePriceOptimizationRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (!TokenValidator.ValidateToken(Request))
-            return Unauthorized();
-
-
         if (Request.Query.ContainsKey("status")) return StatusCode(int.Parse(Request.Query["status"]));
         if (Request.Query.ContainsKey("delay"))
         {
             var delay = int.Parse(Request.Query["delay"]);
             await Task.Delay(new TimeSpan(0, 0, 0, delay), cancellationToken);
         }
+
+
+        if (!TokenValidator.ValidateToken(Request))
+            return Unauthorized();
+
 
         if (request.OverrideToDefaultPrice)
             return Ok(new Response<PriceOptimization>(new PriceOptimization(request.ItemId, request.DeviceId,
@@ -51,9 +52,6 @@ public class PriceOptimizationsController : Controller
     public async Task<IActionResult> GetBatchPriceOptimizations([FromBody] GetBatchPriceOptimizationsRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (!TokenValidator.ValidateToken(Request))
-            return Unauthorized();
-
         if (Request.Query.ContainsKey("status")) return StatusCode(int.Parse(Request.Query["status"]));
         if (Request.Query.ContainsKey("delay"))
         {
@@ -62,7 +60,11 @@ public class PriceOptimizationsController : Controller
         }
 
 
-        if (request.Items.Length > 100) return BadRequest("Batch size cannot be greater than 100");
+        if (!TokenValidator.ValidateToken(Request))
+            return Unauthorized();
+
+        
+        if (request.Items.Length > 500) return BadRequest("Batch size cannot be greater than 500");
 
         var response = new List<PriceOptimization>(request.Items.Length);
         foreach (var pricingRef in request.Items)

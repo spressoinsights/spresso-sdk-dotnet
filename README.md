@@ -3,14 +3,14 @@
 This repository contains all of the .net SDKs for calling the [Spresso](https://www.spresso.com/) API.
 
 
-### Spresso.Sdk.Core
+## Spresso.Sdk.Core
 Core SDKs that deal with
 * Authentication
 * Resilient API calls
 
 Note that for best performance, `AuthTokenHandler` should should be a singleton and live for the lifetime of the application.
 
-### Spresso.Sdk.PriceOptimizations
+## Spresso.Sdk.PriceOptimizations
 SDK that works with the Spresso Price Optimzation APIs to fetch optimal prices for a given set of products.
 
 Note that for best performance, `PriceOptimizationsHandler` should should be a singleton and live for the lifetime of the application.
@@ -21,7 +21,7 @@ Fallback behavior can be disabled by setting `PriceOptimizationsHandlerOptions.T
 
 This SDK will handle tokens for you and will return the default price if a bot is detected.
 
-#### Quickstart
+### Quickstart
 ```csharp
 var authTokenHandler = new AuthTokenHandler("myClientId", "mySecret");
 var priceOptimizationHandler = new PriceOptimizationsHandler(authTokenHandler);
@@ -40,8 +40,28 @@ var batchResponse2 = priceOptimizationHandler.GetBatchPriceOptimizationsAsync(
     }, userAgent: "google-bot"));
 
 ```
+## Mock Server
+This repository included a Mock Server that can be used for testing different SDKs (in any language), for testing integrations, and for testing error scenarios.
 
-#### Building
+### To Run:
+``` bash
+cd ./tests/Spresso.MockApi && dotnet run
+```
+
+### Forced Error Conditions:
+#### To test different response codes, add the following query parameters to the web request:
+`status=<status code>` - will return the specified status code
+
+example: `https://localhost:7176/pim/v1/priceoptimizations?status=500`
+
+#### To test different response times, add the following query parameters to the web request:
+`delay=<delay in seconds>` - will delay the response by the specified amount of time
+
+example: `https://localhost:7176/pim/v1/priceoptimizations?delay=5`
+
+Note: if testing via the SDK, you can use the `AdditionalParameters` property to add these query parameters to the request.
+
+## Building
 This solution is setup to use the [nuke](https://nuke.build/) build system (still a work in progress).
 
 Assuming you have nuke [installed](https://nuke.build/docs/getting-started/installation/), you can run the following commands:
@@ -58,7 +78,7 @@ To get a list of sdks, run `nuke listsdks`
 For help, run `nuke --help`
 If you do not have nuke installed, you can also substitute `nuke` with `build.cmd`, `build.ps1`, or `build.sh`, depending on your platform.
 
-#### Benchmarks
+## Benchmarks
 To run benchmarks, build `tests/Spresso.Sdk.Benchmarks` in `Release` mode, then run `Spresso.Sdk.Benchmarks`.
 
 [Historical Benchmarks](/tests/Spresso.Sdk.Benchmarks/History)
