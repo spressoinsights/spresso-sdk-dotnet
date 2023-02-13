@@ -110,7 +110,7 @@ namespace Spresso.Sdk.Core.Auth
                             }, cancellationToken);
                         return tokenResponse;
                     },
-                    statusCode =>
+                    onAuthErrorFailure: statusCode =>
                     {
                         _logger.LogDebug("@@{0}@@ Token status code {1}", nameof(GetTokenAsync), statusCode);
                         switch (statusCode)
@@ -121,19 +121,19 @@ namespace Spresso.Sdk.Core.Auth
                                 return new AuthTokenResponse(AuthError.InvalidScopes);
                         }
                     },
-                    () =>
+                   onBadRequestFailure: () =>
                     {
                         _logger.LogError("@@{0}@@ Token status code {1}", nameof(GetTokenAsync),
                             HttpStatusCode.BadRequest);
                         return new AuthTokenResponse(AuthError.Unknown);
                     },
-                    exception =>
+                    onTimeoutFailure: exception =>
                     {
                         _logger.LogError("@@{0}@@ Error getting token.  Exception: {1}", nameof(GetTokenAsync),
                             exception);
                         return new AuthTokenResponse(AuthError.Timeout);
                     },
-                    (exception, httpStatusCode) =>
+                    onUnknownFailure: (exception, httpStatusCode) =>
                     {
                         _logger.LogError("@@{0}@@ Error getting token.  HttpStatusCode: {1}, Exception: {2}",
                             nameof(GetTokenAsync), httpStatusCode, exception);
@@ -148,17 +148,17 @@ namespace Spresso.Sdk.Core.Auth
             var retryErrors = new[] { AuthError.Timeout, AuthError.Unknown };
 
             return ResiliencyPolicyBuilder.BuildPolicy(
-                new RetryOptions<AuthTokenResponse>(t => !t.IsSuccess && retryErrors.Contains(t.Error),
+                retryOptions: new RetryOptions<AuthTokenResponse>(t => !t.IsSuccess && retryErrors.Contains(t.Error),
                     options.NumberOfRetries),
                 new TimeoutOptions(options.Timeout),
-                new CircuitBreakerOptions<AuthTokenResponse>(t => !t.IsSuccess && retryErrors.Contains(t.Error),
+                circuitBreakerOptions: new CircuitBreakerOptions<AuthTokenResponse>(breakPredicate: t => !t.IsSuccess && retryErrors.Contains(t.Error),
                     options.NumberOfFailuresBeforeTrippingCircuitBreaker,
                     options.CircuitBreakerBreakDuration,
-                    (state, ts, ctx) => { _logger.LogError("Token circuit breaker tripped"); },
-                    ctx => { _logger.LogInformation("Token circuit breaker reset"); }),
-                new FallbackOptions<AuthTokenResponse>(
-                    r => !r.IsSuccess,
-                    (tokenResponse, ctx, cancellationToken) =>
+                   onBreakAction: (state, ts, ctx) => { _logger.LogError("Token circuit breaker tripped"); },
+                    onResetAction: ctx => { _logger.LogInformation("Token circuit breaker reset"); }),
+                fallbackOptions: new FallbackOptions<AuthTokenResponse>(
+                    fallbackPredicate: r => !r.IsSuccess,
+                    fallbackAction: (tokenResponse, ctx, cancellationToken) =>
                     {
                         var error = tokenResponse.Result?.Error;
                         if (tokenResponse.Exception is TimeoutRejectedException) error = AuthError.Timeout;
@@ -177,7 +177,7 @@ namespace Spresso.Sdk.Core.Auth
 
                         return Task.FromResult(tokenResponse.Result!);
                     },
-                    (result, context) => Task.CompletedTask)
+                    onFallback: (result, context) => Task.CompletedTask)
             );
         }
 

@@ -340,9 +340,9 @@ namespace Spresso.Sdk.PriceOptimizations
             PriceOptimizationsHandlerOptions options)
         {
             return CreateResiliencyPolicy(options,
-                new FallbackOptions<GetBatchPriceOptimizationsResponse>(
-                    r => !r.IsSuccess,
-                    (response, ctx, ct) =>
+                fallbackOptions: new FallbackOptions<GetBatchPriceOptimizationsResponse>(
+                    fallbackPredicate: r => !r.IsSuccess,
+                    fallbackAction: (response, ctx, ct) =>
                     {
                         var error = response?.Result?.Error;
                         if (response!.Exception is TimeoutRejectedException) error = PriceOptimizationError.Timeout;
@@ -362,17 +362,17 @@ namespace Spresso.Sdk.PriceOptimizations
                         if (options.ThrowOnFailure) throw new Exception($"Request failed.  Error {error}");
                         return Task.FromResult(response.Result!);
                     },
-                    (result, context) => Task.CompletedTask
-                ), nameof(GetBatchPriceOptimizationsAsync));
+                    onFallback: (result, context) => Task.CompletedTask
+                ), caller: nameof(GetBatchPriceOptimizationsAsync));
         }
 
         private IAsyncPolicy<GetPriceOptimizationResponse> CreatePriceOptimizationResiliencyPolicy(
             PriceOptimizationsHandlerOptions options)
         {
             return CreateResiliencyPolicy(options,
-                new FallbackOptions<GetPriceOptimizationResponse>(
-                    r => !r.IsSuccess,
-                    (response, ctx, ct) =>
+                fallbackOptions: new FallbackOptions<GetPriceOptimizationResponse>(
+                    fallbackPredicate: r => !r.IsSuccess,
+                    fallbackAction: (response, ctx, ct) =>
                     {
                         var error = response?.Result?.Error;
                         if (response?.Exception is TimeoutRejectedException) error = PriceOptimizationError.Timeout;
@@ -392,8 +392,8 @@ namespace Spresso.Sdk.PriceOptimizations
 
                         return Task.FromResult(response.Result!);
                     },
-                    (result, context) => Task.CompletedTask
-                ), nameof(GetPriceOptimizationAsync));
+                    onFallback: (result, context) => Task.CompletedTask
+                ), caller: nameof(GetPriceOptimizationAsync));
         }
 
         private GetUserAgentRegexesApiResponse CreateUserAgentRegexes(string jsonResponse)
