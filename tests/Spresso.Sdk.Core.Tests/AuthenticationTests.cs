@@ -177,7 +177,7 @@ namespace Spresso.Sdk.Core.Tests ;
         {
             var tokenResponse = await tokenHandler.GetTokenAsync();
         }
-        logger.Logs.Count(s => s.Equals("Token request failed.  Error None.  Exception (if applicable): The circuit is now open and is not allowing calls."))
+        logger.Logs.Count(s => s.Equals("Token request failed.  Error (null).  Exception (if applicable): The circuit is now open and is not allowing calls."))
             .Should().Be(2, "because the circuit breaker has been tripped");
     }
 
