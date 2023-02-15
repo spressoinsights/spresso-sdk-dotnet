@@ -29,6 +29,7 @@ namespace Spresso.Sdk.PriceOptimizations
         }
 
         private const string TokenCacheKeyPrefix = "Spresso.PriceOptimizations";
+        private const string PriceOptimizationsEndpoint = "/pim/v1/priceOptimizations";
         private const int MaxRequestSize = 20;
         private readonly string _additionalParameters;
         private readonly IAuthTokenHandler _authTokenHandler;
@@ -76,6 +77,7 @@ namespace Spresso.Sdk.PriceOptimizations
         {
             const string logNamespace = "@@GetPriceOptimizationAsync@@";
 
+            
             var executionResult = await _getPriceOptimizationPolicy.ExecuteAsync(async () =>
             {
                 var cacheKey = GetPriceOptimizationCacheKey(request);
@@ -140,7 +142,7 @@ namespace Spresso.Sdk.PriceOptimizations
 
                 var httpClient = GetHttpClient(token);
                 var query =
-                    $"/pim/v1/priceOptimizations?deviceId={request.DeviceId}&itemId={request.ItemId}&defaultPrice={request.DefaultPrice}&overrideToDefaultPrice={request.OverrideToDefaultPrice}";
+                    $"{PriceOptimizationsEndpoint}?deviceId={request.DeviceId}&itemId={request.ItemId}&defaultPrice={request.DefaultPrice}&overrideToDefaultPrice={request.OverrideToDefaultPrice}";
 
                 _logger.LogDebug("{0} querying {1}", logNamespace, query);
 
@@ -258,7 +260,7 @@ namespace Spresso.Sdk.PriceOptimizations
                     var httpClient = GetHttpClient(token);
 
                     var requestUri =
-                        "/pim/v1/priceOptimizations";
+                        PriceOptimizationsEndpoint;
                     if (!string.IsNullOrEmpty(_additionalParameters)) requestUri += $"?{_additionalParameters}";
 
                     var batchApiRequest = new
