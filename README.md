@@ -2,10 +2,12 @@
 
 This repository contains all of the .net SDKs for calling the [Spresso](https://www.spresso.com/) API.
 
+
 | Package | Link |
 |---------|------|
 | Core SDK | [![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/Spresso.Sdk.Core)](https://www.nuget.org/packages/Spresso.Sdk.Core) |
 | Price Optimizations | ![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/Spresso.Sdk.PriceOptimizations) |
+
 
 ## Spresso.Sdk.Core
 Core SDKs that deal with
@@ -80,6 +82,7 @@ To build and run tests, run `nuke test` or `nuke test --target-project <your sdk
 To get a list of sdks, run `nuke listsdks`
 
 For help, run `nuke --help`
+
 If you do not have nuke installed, you can also substitute `nuke` with `build.cmd`, `build.ps1`, or `build.sh`, depending on your platform.
 
 ## Benchmarks
