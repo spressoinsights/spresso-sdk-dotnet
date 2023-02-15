@@ -2,6 +2,10 @@
 
 This repository contains all of the .net SDKs for calling the [Spresso](https://www.spresso.com/) API.
 
+| Package | Link |
+|---------|------|
+| Core SDK | [![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/Spresso.Sdk.Core)](https://www.nuget.org/packages/Spresso.Sdk.Core) |
+| Price Optimizations | ![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/Spresso.Sdk.PriceOptimizations) |
 
 ## Spresso.Sdk.Core
 Core SDKs that deal with
