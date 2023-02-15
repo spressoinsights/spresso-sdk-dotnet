@@ -82,7 +82,7 @@ namespace Spresso.Sdk.Core.Auth
                     _logger.LogDebug("{0} cache hit", nameof(GetTokenAsync));
 
                     var tokenResponse = CreateTokenResponse(cachedToken);
-                    if (tokenResponse.ExpiresAt > DateTimeOffset.UtcNow.Subtract(_tokenExpirationLeeway))
+                    if (tokenResponse.ExpiresAt!.Value.Subtract(_tokenExpirationLeeway) > DateTimeOffset.UtcNow)
                     {
                         return tokenResponse;
                     }
@@ -183,7 +183,9 @@ namespace Spresso.Sdk.Core.Auth
 
         private AuthTokenResponse CreateTokenResponse(string auth0TokenResponseJson)
         {
-            var auth0TokenResponse = JsonConvert.DeserializeObject<Auth0TokenResponse>(auth0TokenResponseJson);
+            if (auth0TokenResponseJson == null) throw new ArgumentNullException(nameof(auth0TokenResponseJson));
+
+            var auth0TokenResponse = JsonConvert.DeserializeObject<Auth0TokenResponse>(auth0TokenResponseJson)!;
             return new AuthTokenResponse(auth0TokenResponse.access_token!,
                 DateTimeOffset.Now.AddSeconds(auth0TokenResponse.expires_in));
         }
