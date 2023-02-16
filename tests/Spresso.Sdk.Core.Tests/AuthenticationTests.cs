@@ -25,7 +25,7 @@ namespace Spresso.Sdk.Core.Tests ;
         private readonly TestHttpClientFactory<Program> _httpClientFactory;
 
 
-        private IAuthTokenHandler CreateAuthTokenHandler(HttpStatusCode? statusCode = null, int? delay = null, AuthTokenHandlerOptions options = null)
+        private IAuthTokenHandler CreateAuthTokenHandler(HttpStatusCode? statusCode = null, int? delay = null, AuthTokenHandlerOptions? options = null)
         {
             options ??= new AuthTokenHandlerOptions();
             options.SpressoHttpClientFactory = new SpressoHttpClientFactory(_httpClientFactory);

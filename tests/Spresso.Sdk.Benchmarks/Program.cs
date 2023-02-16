@@ -16,7 +16,7 @@ namespace Spresso.Sdk.Benchmarks
         private readonly AuthTokenHandler _authTokenHandler;
         private readonly PriceOptimizationsHandler _priceOptimizationsHandler;
 
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
            
 
