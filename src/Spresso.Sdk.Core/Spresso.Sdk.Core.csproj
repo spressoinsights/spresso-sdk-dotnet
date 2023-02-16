@@ -6,7 +6,26 @@
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackAsTool>False</PackAsTool>
 		<Version>1.0.1.0-beta</Version>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<Title>Spresso Core Sdk</Title>
+		<Company>Spresso</Company>
+		<Description>Core SDKs that deal with Authentication and provides functionality for resilient API calls</Description>
+		<Copyright>Copyright © 2023</Copyright>
+		<PackageProjectUrl>https://github.com/spressoinsights/spresso-sdk-dotnet</PackageProjectUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/spressoinsights/spresso-sdk-dotnet</RepositoryUrl>
+		<PackageTags>spresso;boxed;spresso-core;sdk</PackageTags>
+		<PackageReleaseNotes>Initial release</PackageReleaseNotes>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <None Include="..\..\README.md">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="HttpClientFactoryLite" Version="0.4.0" />
