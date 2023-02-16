@@ -5,7 +5,7 @@
 		<Nullable>enable</Nullable>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackAsTool>False</PackAsTool>
-		<Version>1.0.1.0-beta</Version>
+		<Version>1.0.2.0-beta</Version>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<Title>Spresso Core Sdk</Title>

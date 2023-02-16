@@ -190,7 +190,7 @@ namespace Spresso.Sdk.Core.Auth
                 DateTimeOffset.Now.AddSeconds(auth0TokenResponse.expires_in));
         }
 
-        private class Auth0TokenResponse
+        private sealed class Auth0TokenResponse
         {
             public string? access_token { get; set; }
             public string? token_type { get; set; }

@@ -28,7 +28,7 @@ namespace Spresso.Sdk.PriceOptimizations
         Task<GetPriceOptimizationsUserAgentOverridesResponse> GetPriceOptimizationsUserAgentOverridesAsync(CancellationToken cancellationToken = default);
     }
 
-    public class GetPriceOptimizationsUserAgentOverridesResponse : IPriceOptimizationResult
+    public sealed class GetPriceOptimizationsUserAgentOverridesResponse : IPriceOptimizationResult
     {
         public Regex[] UserAgentRegexes { get; }
         public bool IsSuccess => Error == PriceOptimizationError.None;
@@ -54,7 +54,7 @@ namespace Spresso.Sdk.PriceOptimizations
         public PriceOptimizationError Error { get; }
     }
 
-    public class GetPriceOptimizationResponse : IPriceOptimizationResult
+    public sealed class GetPriceOptimizationResponse : IPriceOptimizationResult
     {
         public bool IsSuccess => Error == PriceOptimizationError.None;
         public PriceOptimization? PriceOptimization { get; }
@@ -79,7 +79,7 @@ namespace Spresso.Sdk.PriceOptimizations
         }
     }
 
-    public class GetBatchPriceOptimizationsResponse : IPriceOptimizationResult
+    public sealed class GetBatchPriceOptimizationsResponse : IPriceOptimizationResult
     {
         public bool IsSuccess => Error == PriceOptimizationError.None;
         public PriceOptimizationError Error { get; }
@@ -105,13 +105,22 @@ namespace Spresso.Sdk.PriceOptimizations
     }
 
 
-    public class PriceOptimization
+    public sealed class PriceOptimization
     {
-        public string ItemId { get; set; }
-        public string DeviceId { get; set; }
-        public string? UserId { get; set; }
-        public decimal Price { get; set; }
-        public bool IsPriceOptimized { get; set; }
+        public PriceOptimization(string itemId, string deviceId, string? userId, decimal price, bool isPriceOptimized)
+        {
+            ItemId = itemId;
+            DeviceId = deviceId;
+            UserId = userId;
+            Price = price;
+            IsPriceOptimized = isPriceOptimized;
+        }
+
+        public string ItemId { get; }
+        public string DeviceId { get; }
+        public string? UserId { get;}
+        public decimal Price { get; }
+        public bool IsPriceOptimized { get; }
     }
 
     public class GetPriceOptimizationRequest

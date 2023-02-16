@@ -2,7 +2,7 @@
 
 namespace Spresso.Sdk.Core.Auth
 {
-    public class AuthTokenResponse
+    public sealed class AuthTokenResponse
     {
         public string? Token { get; }
         public DateTimeOffset? ExpiresAt { get; }

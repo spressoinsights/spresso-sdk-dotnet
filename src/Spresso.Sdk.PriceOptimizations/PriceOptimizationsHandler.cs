@@ -114,14 +114,8 @@ namespace Spresso.Sdk.PriceOptimizations
                                 logNamespace, request.DeviceId,
                                 request.ItemId, request.UserAgent);
 
-                            return new GetPriceOptimizationResponse(new PriceOptimization
-                            {
-                                UserId = request.UserId,
-                                DeviceId = request.DeviceId,
-                                ItemId = request.ItemId,
-                                IsPriceOptimized = false,
-                                Price = request.DefaultPrice
-                            });
+                            return new GetPriceOptimizationResponse(CreateDefaultPriceOptimization(request));
+
                         }
                     }
                     else
@@ -201,15 +195,8 @@ namespace Spresso.Sdk.PriceOptimizations
                             _logger.LogDebug("{0} user agent override [user-agent: {1}].  Proceeding", logNamespace,
                                 request.UserAgent);
 
-                            return new GetBatchPriceOptimizationsResponse(request.Requests.Select(request =>
-                                new PriceOptimization
-                                {
-                                    UserId = request.UserId,
-                                    DeviceId = request.DeviceId,
-                                    ItemId = request.ItemId,
-                                    IsPriceOptimized = false,
-                                    Price = request.DefaultPrice
-                                }));
+                            return new GetBatchPriceOptimizationsResponse(request.Requests.Select(CreateDefaultPriceOptimization));
+
                         }
                     }
                     else
@@ -280,8 +267,7 @@ namespace Spresso.Sdk.PriceOptimizations
                             responses[i] = apiBatchOptimizations[apiResponseIndex++];
                             var cacheKey = GetPriceOptimizationCacheKey(poRequests[i]);
                             await _distributedCache.SetStringAsync(cacheKey,
-                                JsonConvert.SerializeObject(new GetPriceOptimizationApiResponse
-                                    { Data = responses[i] }),
+                                JsonConvert.SerializeObject(new GetPriceOptimizationApiResponse(responses[i])),
                                 new DistributedCacheEntryOptions
                                 {
                                     AbsoluteExpirationRelativeToNow = _cacheDuration
@@ -313,8 +299,8 @@ namespace Spresso.Sdk.PriceOptimizations
             const string cacheKey = TokenCacheKeyPrefix + ".UserAgentRegexes";
             const string logNamespace = "@@PriceOptimizationsHandler.GetPriceOptimizationsUserAgentOverridesAsync@@";
 
-            if (_localCache.TryGetValue(cacheKey, out GetPriceOptimizationsUserAgentOverridesResponse response))
-                return response;
+            if (_localCache.TryGetValue(cacheKey, out GetPriceOptimizationsUserAgentOverridesResponse? response))
+                return response!;
 
             var tokenResponse = await GetTokenAsync(logNamespace,
                 e => new GetPriceOptimizationsUserAgentOverridesResponse(e), cancellationToken);
@@ -400,7 +386,7 @@ namespace Spresso.Sdk.PriceOptimizations
 
         private GetUserAgentRegexesApiResponse CreateUserAgentRegexes(string jsonResponse)
         {
-            return JsonConvert.DeserializeObject<GetUserAgentRegexesApiResponse>(jsonResponse);
+            return JsonConvert.DeserializeObject<GetUserAgentRegexesApiResponse>(jsonResponse)!;
         }
 
         private Task<T> ExecutePostApiRequestAsync<T>(HttpClient httpClient, string requestUri, string requestJson,
@@ -456,14 +442,8 @@ namespace Spresso.Sdk.PriceOptimizations
 
         private PriceOptimization CreateDefaultPriceOptimization(GetPriceOptimizationRequest request)
         {
-            return new PriceOptimization
-            {
-                UserId = request.UserId,
-                DeviceId = request.DeviceId,
-                ItemId = request.ItemId,
-                IsPriceOptimized = false,
-                Price = request.DefaultPrice
-            };
+            return new PriceOptimization(request.ItemId, request.DeviceId, request.UserId, request.DefaultPrice, false);
+
         }
 
 
@@ -515,28 +495,55 @@ namespace Spresso.Sdk.PriceOptimizations
 
         private class GetPriceOptimizationApiResponse
         {
-            public PriceOptimization Data { get; set; }
+            public GetPriceOptimizationApiResponse(PriceOptimization data)
+            {
+                Data = data;
+            }
+
+            public PriceOptimization Data { get; }
         }
 
         private class GetBatchPriceOptimizationsApiResponse
         {
-            public PriceOptimization[] Data { get; set; }
+            public GetBatchPriceOptimizationsApiResponse(PriceOptimization[] data)
+            {
+                Data = data;
+            }
+
+            public PriceOptimization[] Data { get; }
         }
 
         private class UserAgentRegex
         {
-            public string Name { get; set; }
-            public string Regexp { get; set; }
-            public UserAgentStatus Status { get; set; }
+            public UserAgentRegex(string name, string regexp, UserAgentStatus status)
+            {
+                Name = name;
+                Regexp = regexp;
+                Status = status;
+            }
+
+            public string Name { get; }
+            public string Regexp { get; }
+            public UserAgentStatus Status { get; }
         }
 
         private class GetUserAgentRegexesApiResponse
         {
-            public GetUserAgentRegexesApiResponseData Data { get; set; }
+            public GetUserAgentRegexesApiResponse(GetUserAgentRegexesApiResponseData data)
+            {
+                Data = data;
+            }
+
+            public GetUserAgentRegexesApiResponseData Data { get; }
 
             public class GetUserAgentRegexesApiResponseData
             {
-                public UserAgentRegex[] UserAgentBlacklist { get; set; }
+                public GetUserAgentRegexesApiResponseData(UserAgentRegex[] userAgentBlacklist)
+                {
+                    UserAgentBlacklist = userAgentBlacklist;
+                }
+
+                public UserAgentRegex[] UserAgentBlacklist { get; }
             }
         }
     }

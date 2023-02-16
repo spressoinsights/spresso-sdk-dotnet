@@ -29,7 +29,7 @@ public class PriceOptimizationsController : Controller
 
 
         if (request.OverrideToDefaultPrice)
-            return Ok(new Response<PriceOptimization>(new PriceOptimization(request.ItemId, request.DeviceId,
+            return Ok(new Response<PriceOptimization>(new PriceOptimization(request.ItemId!, request.DeviceId!,
                 request.DefaultPrice, false, request.UserId)));
 
         var defaultPriceInt = (int)(request.DefaultPrice * 100);
@@ -38,7 +38,7 @@ public class PriceOptimizationsController : Controller
         var price = Random.Shared.Next(defaultPriceInt - rangeInt, defaultPriceInt + rangeInt) / 100m;
         return Ok(new
         {
-            data = new PriceOptimization(request.ItemId, request.DeviceId, price, true, request.UserId)
+            data = new PriceOptimization(request.ItemId!, request.DeviceId!, price, true, request.UserId)
         });
     }
 
@@ -64,13 +64,13 @@ public class PriceOptimizationsController : Controller
             return Unauthorized();
 
         
-        if (request.Items.Length > 500) return BadRequest("Batch size cannot be greater than 500");
+        if (request.Items!.Length > 500) return BadRequest("Batch size cannot be greater than 500");
 
         var response = new List<PriceOptimization>(request.Items.Length);
         foreach (var pricingRef in request.Items)
             if (pricingRef.OverrideToDefaultPrice)
             {
-                response.Add(new PriceOptimization(pricingRef.ItemId, pricingRef.DeviceId, pricingRef.DefaultPrice,
+                response.Add(new PriceOptimization(pricingRef.ItemId!, pricingRef.DeviceId!, pricingRef.DefaultPrice,
                     false, pricingRef.UserId));
             }
             else
@@ -79,7 +79,7 @@ public class PriceOptimizationsController : Controller
                 var rangeInt = (int)(0.1m * defaultPriceInt);
 
                 var price = Random.Shared.Next(defaultPriceInt - rangeInt, defaultPriceInt + rangeInt) / 100m;
-                response.Add(new PriceOptimization(pricingRef.ItemId, pricingRef.DeviceId, price, true,
+                response.Add(new PriceOptimization(pricingRef.ItemId!, pricingRef.DeviceId!, price, true,
                     pricingRef.UserId));
             }
 
@@ -87,7 +87,7 @@ public class PriceOptimizationsController : Controller
     }
 
     [HttpGet("priceOptimizationOrgConfig")]
-    public async Task<IActionResult> GetPriceOptimizationOrgConfig(CancellationToken cancellationToken = default)
+    public IActionResult GetPriceOptimizationOrgConfig(CancellationToken cancellationToken = default)
     {
         if (!TokenValidator.ValidateToken(Request))
             return Unauthorized();
@@ -109,13 +109,13 @@ public class PriceOptimizationsController : Controller
 
     public class GetBatchPriceOptimizationsRequest
     {
-        public GetSinglePriceOptimizationRequest[] Items { get; set; }
+        public GetSinglePriceOptimizationRequest[]? Items { get; set; }
     }
 
     public class GetSinglePriceOptimizationRequest
     {
-        public string ItemId { get; set; }
-        public string DeviceId { get; set; }
+        public string? ItemId { get; set; }
+        public string? DeviceId { get; set; }
         public string? UserId { get; set; } = default;
         public decimal DefaultPrice { get; set; }
         public bool OverrideToDefaultPrice { get; set; }
