@@ -111,9 +111,9 @@ namespace Spresso.Sdk.Core.Auth
         public TimeSpan CircuitBreakerBreakDuration { get; set; } = new TimeSpan(0, 0, 0, seconds: 60);
 
         /// <summary>
-        ///     Http timeout.  Default is 30 seconds.
+        ///     Http timeout.  Default is 1 seconds.
         /// </summary>
-        public TimeSpan HttpTimeout { get; set; } = new TimeSpan(0, 0, 0, seconds: 30);
+        public TimeSpan HttpTimeout { get; set; } = new TimeSpan(0, 0, 0, seconds: 1);
 
         /// <summary>
         ///     Logger for debug events
