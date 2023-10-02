@@ -57,7 +57,7 @@ namespace Spresso.Sdk.Benchmarks
         [Benchmark]
         public async Task<bool> OptimizePrice()
         {
-            var tokenResponse = await _priceOptimizationsHandler.GetPriceOptimizationAsync(new GetPriceOptimizationRequest("test", "test", 1.00m, "test", false, "test"));
+            var tokenResponse = await _priceOptimizationsHandler.GetPriceAsync(new GetPriceRequest("test", "test", 1.00m, "test", false, "test"));
             return tokenResponse.IsSuccess;
         }
 
@@ -65,13 +65,13 @@ namespace Spresso.Sdk.Benchmarks
         [Benchmark]
         public async Task<bool> OptimizePriceBatch()
         {
-            var tokenResponse = await _priceOptimizationsHandler.GetBatchPriceOptimizationsAsync(new GetBatchPriceOptimizationsRequest(new[]
+            var tokenResponse = await _priceOptimizationsHandler.GetPricesAsync(new GetPricesRequest(new[]
             {
-                new GetPriceOptimizationRequest("test", "test", 1.00m, "test", false, "test"),
-                new GetPriceOptimizationRequest("test", "test", 1.00m, "test", false, "test"),
-                new GetPriceOptimizationRequest("test", "test", 1.00m, "test", false, "test"),
-                new GetPriceOptimizationRequest("test", "test", 1.00m, "test", false, "test"),
-                new GetPriceOptimizationRequest("test", "test", 1.00m, "test", false, "test")
+                new GetPriceRequest("test", "test", 1.00m, "test", false, "test"),
+                new GetPriceRequest("test", "test", 1.00m, "test", false, "test"),
+                new GetPriceRequest("test", "test", 1.00m, "test", false, "test"),
+                new GetPriceRequest("test", "test", 1.00m, "test", false, "test"),
+                new GetPriceRequest("test", "test", 1.00m, "test", false, "test")
             }));
             return tokenResponse.IsSuccess;
         }

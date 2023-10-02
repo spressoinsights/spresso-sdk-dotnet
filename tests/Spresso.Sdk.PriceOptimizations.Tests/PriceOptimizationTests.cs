@@ -73,18 +73,17 @@ namespace Spresso.Sdk.PriceOptimizations.Test
         public async Task get_price_optimization()
         {
             var priceOptimizationHandler = CreatePriceOptimizationHandler();
-            var response = await priceOptimizationHandler.GetPriceOptimizationAsync(new GetPriceOptimizationRequest("test","1111",9.99m ));
+            var response = await priceOptimizationHandler.GetPriceAsync(new GetPriceRequest("test","1111",9.99m ));
             response.IsSuccess.Should().BeTrue("because the request was successful");
             response.PriceOptimization.Should().NotBeNull("because the request was successful");
             response.PriceOptimization!.IsPriceOptimized.Should().BeTrue("because the item is in a campaign, not an override and not a fallback");
         }
 
-
         [Fact]
         public async Task get_price_optimization_override()
         {
             var priceOptimizationHandler = CreatePriceOptimizationHandler();
-            var response = await priceOptimizationHandler.GetPriceOptimizationAsync(new GetPriceOptimizationRequest("test", "1111", 9.99m, overrideToDefaultPrice: true));
+            var response = await priceOptimizationHandler.GetPriceAsync(new GetPriceRequest("test", "1111", 9.99m, overrideToDefaultPrice: true));
             response.IsSuccess.Should().BeTrue("because the request was successful");
             response.PriceOptimization.Should().NotBeNull("because the request was successful");
             response.PriceOptimization!.IsPriceOptimized.Should().BeFalse("because the override flag was set");
@@ -94,7 +93,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
         public async Task get_price_optimization_uses_default_price_when_price_optimization_api_returns_an_error_response()
         {
             var priceOptimizationHandler = CreatePriceOptimizationHandler(statusCode: HttpStatusCode.InternalServerError);
-            var response = await priceOptimizationHandler.GetPriceOptimizationAsync(new GetPriceOptimizationRequest("test", "1111", 9.99m));
+            var response = await priceOptimizationHandler.GetPriceAsync(new GetPriceRequest("test", "1111", 9.99m));
             response.IsSuccess.Should().BeFalse("because the server returned an 500 status code");
             response.PriceOptimization.Should().NotBeNull("because the request was successful");
             response.PriceOptimization!.IsPriceOptimized.Should().BeFalse("because the fallback price was used");
@@ -106,7 +105,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
         {
             var priceOptimizationHandler = CreatePriceOptimizationHandler(delay: 30, options: new PriceOptimizationsHandlerOptions { Timeout = new TimeSpan(0, 0, 0, 0, 200) });
             var sw = Stopwatch.StartNew();
-            var response = await priceOptimizationHandler.GetPriceOptimizationAsync(new GetPriceOptimizationRequest("test", "1111", 9.99m));
+            var response = await priceOptimizationHandler.GetPriceAsync(new GetPriceRequest("test", "1111", 9.99m));
             sw.Stop();
             response.IsSuccess.Should().BeFalse("because the server response exceeded the set timeout");
             response.PriceOptimization.Should().NotBeNull("because the request was successful");
@@ -118,7 +117,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
         public async Task get_price_optimization_throws_when_price_optimization_api_times_out_and_throw_on_failure_is_enabled()
         {
             var priceOptimizationHandler = CreatePriceOptimizationHandler(delay: 30, options: new PriceOptimizationsHandlerOptions { Timeout = new TimeSpan(0, 0, 0, 0, 200), ThrowOnFailure = true });
-            Func<Task> act = async () => await priceOptimizationHandler.GetPriceOptimizationAsync(new GetPriceOptimizationRequest("test", "1111", 9.99m));
+            Func<Task> act = async () => await priceOptimizationHandler.GetPriceAsync(new GetPriceRequest("test", "1111", 9.99m));
             await act.Should().ThrowAsync<TimeoutRejectedException>("because the server response exceeded the set timeout");
         }
 
@@ -129,7 +128,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
         {
             var authTokenHandler = CreateAuthTokenHandler(statusCode: HttpStatusCode.InternalServerError);
             var priceOptimizationHandler = CreatePriceOptimizationHandler(authTokenHandler: authTokenHandler);
-            var response = await priceOptimizationHandler.GetPriceOptimizationAsync(new GetPriceOptimizationRequest("test", "1111", 9.99m));
+            var response = await priceOptimizationHandler.GetPriceAsync(new GetPriceRequest("test", "1111", 9.99m));
             response.IsSuccess.Should().BeFalse("because the server returned an 500 status code when attempting to fetch a token");
             response.PriceOptimization.Should().NotBeNull("because the request was successful");
             response.PriceOptimization!.IsPriceOptimized.Should().BeFalse("because the fallback price was used");
@@ -141,7 +140,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
         {
             var authTokenHandler = CreateAuthTokenHandler(statusCode: HttpStatusCode.InternalServerError, options: new AuthTokenHandlerOptions { ThrowOnTokenFailure = true });
             var priceOptimizationHandler = CreatePriceOptimizationHandler(authTokenHandler: authTokenHandler, options: new PriceOptimizationsHandlerOptions { ThrowOnFailure = true });
-            Func<Task> act = async () => await priceOptimizationHandler.GetPriceOptimizationAsync(new GetPriceOptimizationRequest("test", "1111", 9.99m));
+            Func<Task> act = async () => await priceOptimizationHandler.GetPriceAsync(new GetPriceRequest("test", "1111", 9.99m));
             await act.Should().ThrowAsync<Exception>("because the server returned an 500 status code when attempting to fetch a token");
         }
 
@@ -151,7 +150,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
             var authTokenHandler = CreateAuthTokenHandler(delay: 30, options: new AuthTokenHandlerOptions { Timeout = new TimeSpan(0, 0, 0, 0, 200) });
             var priceOptimizationHandler = CreatePriceOptimizationHandler(authTokenHandler: authTokenHandler);
             var sw = Stopwatch.StartNew();
-            var response = await priceOptimizationHandler.GetPriceOptimizationAsync(new GetPriceOptimizationRequest("test", "1111", 9.99m));
+            var response = await priceOptimizationHandler.GetPriceAsync(new GetPriceRequest("test", "1111", 9.99m));
             sw.Stop();
             response.IsSuccess.Should().BeFalse("because the server auth response exceeded the set timeout");
             response.PriceOptimization.Should().NotBeNull("because the request was successful");
@@ -164,7 +163,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
         {
             var authTokenHandler = CreateAuthTokenHandler(delay: 30, options: new AuthTokenHandlerOptions { Timeout = new TimeSpan(0, 0, 0, 0, 200) });
             var priceOptimizationHandler = CreatePriceOptimizationHandler(authTokenHandler: authTokenHandler, options: new PriceOptimizationsHandlerOptions { ThrowOnFailure = true });
-            Func<Task> act = async () => await priceOptimizationHandler.GetPriceOptimizationAsync(new GetPriceOptimizationRequest("test", "1111", 9.99m));
+            Func<Task> act = async () => await priceOptimizationHandler.GetPriceAsync(new GetPriceRequest("test", "1111", 9.99m));
             await act.Should().ThrowAsync<Exception>("because the server auth response exceeded the set timeout");
         }
         
@@ -173,7 +172,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
         public async Task get_batch_price_optimizations()
         {
             var priceOptimizationHandler = CreatePriceOptimizationHandler();
-            var response = await priceOptimizationHandler.GetBatchPriceOptimizationsAsync(new GetBatchPriceOptimizationsRequest( new List<GetPriceOptimizationRequest>
+            var response = await priceOptimizationHandler.GetPricesAsync(new GetPricesRequest( new List<GetPriceRequest>
             {
                 new("test", "1111", 9.99m),
                 new("test", "2222", 19.99m),
@@ -183,15 +182,15 @@ namespace Spresso.Sdk.PriceOptimizations.Test
             response.IsSuccess.Should().BeTrue("because the request was successful");
             response.PriceOptimizations.Count().Should().Be(3, "because 3 items were requested");
             response.PriceOptimizations.All(x => x.IsPriceOptimized).Should().BeTrue("because all prices are expected to be optimized");
-            response.PriceOptimizations.First().ItemId.Should().Be("1111", "because the response should be in the same order as the request");
-            response.PriceOptimizations.Last().ItemId.Should().Be("3333", "because the response should be in the same order as the request");
+            response.PriceOptimizations.First().Sku.Should().Be("1111", "because the response should be in the same order as the request");
+            response.PriceOptimizations.Last().Sku.Should().Be("3333", "because the response should be in the same order as the request");
         }
 
         [Fact]
         public async Task get_batch_price_optimizations_with_some_overrides()
         {
             var priceOptimizationHandler = CreatePriceOptimizationHandler();
-            var response = await priceOptimizationHandler.GetBatchPriceOptimizationsAsync(new GetBatchPriceOptimizationsRequest(new List<GetPriceOptimizationRequest>
+            var response = await priceOptimizationHandler.GetPricesAsync(new GetPricesRequest(new List<GetPriceRequest>
             {
                 new("test", "1111", 9.99m),
                 new("test", "2222", 19.99m, overrideToDefaultPrice: true),
@@ -207,7 +206,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
         public async Task get_batch_price_optimizations_uses_default_price_when_price_optimization_api_returns_an_error_response()
         {
             var priceOptimizationHandler = CreatePriceOptimizationHandler(statusCode: HttpStatusCode.InternalServerError);
-            var response = await priceOptimizationHandler.GetBatchPriceOptimizationsAsync(new GetBatchPriceOptimizationsRequest(new List<GetPriceOptimizationRequest>
+            var response = await priceOptimizationHandler.GetPricesAsync(new GetPricesRequest(new List<GetPriceRequest>
             {
                 new("test", "1111", 9.99m),
                 new("test", "2222", 19.99m),
@@ -223,7 +222,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
         {
             var priceOptimizationHandler = CreatePriceOptimizationHandler(delay: 30, options: new PriceOptimizationsHandlerOptions { Timeout = new TimeSpan(0, 0, 0, 0, 200) });
             var sw = Stopwatch.StartNew();
-            var response = await priceOptimizationHandler.GetBatchPriceOptimizationsAsync(new GetBatchPriceOptimizationsRequest(new List<GetPriceOptimizationRequest>
+            var response = await priceOptimizationHandler.GetPricesAsync(new GetPricesRequest(new List<GetPriceRequest>
             {
                 new("test", "1111", 9.99m),
                 new("test", "2222", 19.99m),
@@ -239,7 +238,7 @@ namespace Spresso.Sdk.PriceOptimizations.Test
         public async Task get_batch_price_optimizations_returns_fallback_prices_when_useragent_override_is_detected()
         {
             var priceOptimizationHandler = CreatePriceOptimizationHandler();
-            var response = await priceOptimizationHandler.GetBatchPriceOptimizationsAsync(new GetBatchPriceOptimizationsRequest(new List<GetPriceOptimizationRequest>
+            var response = await priceOptimizationHandler.GetPricesAsync(new GetPricesRequest(new List<GetPriceRequest>
                 {
                     new("test", "1111", 9.99m),
                     new("test", "2222", 19.99m),

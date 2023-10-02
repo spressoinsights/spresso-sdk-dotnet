@@ -19,29 +19,27 @@ public class Program
 
 
 
-        var singleRequest = new GetPriceOptimizationRequest("123", "456", 8.95m,
+        var singleRequest = new GetPriceRequest("123", "456", 8.95m,
             userAgent: "Mozilla/5.0 (X11; Linux x86_64; Storebot-Google/1.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36");
-        var secondRequest = new GetPriceOptimizationRequest("123", "789", 18.95m);
+        var secondRequest = new GetPriceRequest("123", "789", 18.95m);
 
-        var singleResponse = await priceOptimizationHandler.GetPriceOptimizationAsync(singleRequest);
+        var singleResponse = await priceOptimizationHandler.GetPriceAsync(singleRequest);
         if (singleResponse.IsSuccess)
         {
             PrintPriceOptimization(singleResponse.PriceOptimization!);
         }
 
 
-        var batchRequest = new GetBatchPriceOptimizationsRequest(new[] { singleRequest, secondRequest }, userAgent: "Gio's Computer");
-        var batchResponse = await priceOptimizationHandler.GetBatchPriceOptimizationsAsync(batchRequest);
+        var batchRequest = new GetPricesRequest(new[] { singleRequest, secondRequest }, userAgent: "Gio's Computer");
+        var batchResponse = await priceOptimizationHandler.GetPricesAsync(batchRequest);
    
         if (batchResponse.IsSuccess)
         {
-            Console.WriteLine("Optimized Prices");
             foreach (var po in batchResponse.PriceOptimizations)
                 PrintPriceOptimization(po);
         }
         else
         {
-            Console.WriteLine("Could not get default optimized prices.  Using fallback prices");
             foreach (var po in batchResponse.PriceOptimizations)
                 PrintPriceOptimization(po);
         }
@@ -72,7 +70,6 @@ public class Program
                         new PriceOptimizationsHandlerOptions
                         {
                             SpressoBaseUrl = Environment.GetEnvironmentVariable("SPRESSO_BASE_AUTH_URL"),
-                            DistributedCache = sp.GetRequiredService<IDistributedCache>(),
                             AdditionalParameters = "",
                             Timeout = new TimeSpan(0, 0, 179),
                             HttpTimeout = new TimeSpan(0,0,90),
@@ -86,7 +83,7 @@ public class Program
 
     private static void PrintPriceOptimization(PriceOptimization priceOptimization)
     {
-        Console.WriteLine($"Device: {priceOptimization.DeviceId}, Item: {priceOptimization.ItemId}, Price: {priceOptimization.Price}");
+        Console.WriteLine($"Device: {priceOptimization.DeviceId}, Item: {priceOptimization.Sku}, Price: {priceOptimization.Price}");
     }
 }
 
