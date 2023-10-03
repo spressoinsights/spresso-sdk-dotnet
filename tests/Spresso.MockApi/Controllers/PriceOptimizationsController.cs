@@ -64,10 +64,10 @@ public class PriceOptimizationsController : Controller
             return Unauthorized();
 
         
-        if (request.Items!.Length > 500) return BadRequest("Batch size cannot be greater than 500");
+        if (request.Requests!.Length > 500) return BadRequest("Batch size cannot be greater than 500");
 
-        var response = new List<PriceOptimization>(request.Items.Length);
-        foreach (var pricingRef in request.Items)
+        var response = new List<PriceOptimization>(request.Requests.Length);
+        foreach (var pricingRef in request.Requests)
             if (pricingRef.OverrideToDefaultPrice)
             {
                 response.Add(new PriceOptimization(pricingRef.Sku!, pricingRef.DeviceId!, pricingRef.DefaultPrice,
@@ -109,7 +109,7 @@ public class PriceOptimizationsController : Controller
 
     public class GetBatchPriceOptimizationsRequest
     {
-        public GetSinglePriceOptimizationRequest[]? Items { get; set; }
+        public GetSinglePriceOptimizationRequest[]? Requests { get; set; }
     }
 
     public class GetSinglePriceOptimizationRequest

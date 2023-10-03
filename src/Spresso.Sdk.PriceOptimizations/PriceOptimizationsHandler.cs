@@ -183,7 +183,7 @@ namespace Spresso.Sdk.PriceOptimizations
 
                 var batchApiRequest = new
                 {
-                    items = poRequests
+                    requests = poRequests
                 };
                 var requestJson = JsonConvert.SerializeObject(batchApiRequest, _jsonSerializerSettings);
 
