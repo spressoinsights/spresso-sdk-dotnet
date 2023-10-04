@@ -29,7 +29,7 @@ namespace Spresso.Sdk.PriceOptimizations
         }
 
         private const string PriceOptimizationsEndpoint = "/pim/v1/prices";
-        private const int MaxRequestSize = 20;
+        private const int MaxRequestSize = 500;
         private readonly string _additionalParameters;
         private readonly IAuthTokenHandler _authTokenHandler;
         private readonly string _baseUrl;
