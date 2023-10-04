@@ -367,35 +367,15 @@ namespace Spresso.Sdk.PriceOptimizations
 
         private PriceOptimization CreatePriceOptimization(string priceOptimizationJson)
         {
-            var apiResponse = JsonConvert.DeserializeObject<GetPriceOptimizationApiResponse>(priceOptimizationJson)!;
-            return apiResponse.Data;
+            var apiResponse = JsonConvert.DeserializeObject<PriceOptimization>(priceOptimizationJson)!;
+            return apiResponse;
         }
 
         private PriceOptimization[] CreatePriceOptimizationArray(string priceOptimizationJson)
         {
             var apiResponse =
-                JsonConvert.DeserializeObject<GetBatchPriceOptimizationsApiResponse>(priceOptimizationJson)!;
-            return apiResponse.Data;
-        }
-
-        private class GetPriceOptimizationApiResponse
-        {
-            public GetPriceOptimizationApiResponse(PriceOptimization data)
-            {
-                Data = data;
-            }
-
-            public PriceOptimization Data { get; }
-        }
-
-        private class GetBatchPriceOptimizationsApiResponse
-        {
-            public GetBatchPriceOptimizationsApiResponse(PriceOptimization[] data)
-            {
-                Data = data;
-            }
-
-            public PriceOptimization[] Data { get; }
+                JsonConvert.DeserializeObject<PriceOptimization[]>(priceOptimizationJson)!;
+            return apiResponse;
         }
 
         private class UserAgentRegex
