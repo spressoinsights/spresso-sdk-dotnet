@@ -11,7 +11,22 @@ namespace Spresso.Sdk.PriceOptimizations
 {
     public class PriceOptimizationsHandlerOptions
     {
+        private int _numberOfFailuresBeforeTrippingCircuitBreaker = 3;
         private TimeSpan _timeout = new TimeSpan(0, 0, 0, seconds: 10);
+
+        /// <summary>
+        ///     The number of failures before the circuit breaker trips.  When the circuit breaker is tripped all requests
+        ///     for a <see cref="CircuitBreakerBreakDuration" />period of time will fail quickly.
+        /// </summary>
+        public int NumberOfFailuresBeforeTrippingCircuitBreaker
+        {
+            get => _numberOfFailuresBeforeTrippingCircuitBreaker;
+        }
+
+        /// <summary>
+        ///     The duration of the circuit breaker break in which all requests will quickly fail. Default is 60 seconds
+        /// </summary>
+        public TimeSpan CircuitBreakerBreakDuration { get; set; } = new TimeSpan(0, 0, 0, 1);
 
         /// <summary>
         ///     Http Client Factory to create http clients
