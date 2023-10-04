@@ -148,7 +148,14 @@ namespace Spresso.Sdk.Core.Auth
             var retryErrors = new[] { AuthError.Timeout, AuthError.Unknown };
 
             return ResiliencyPolicyBuilder.BuildPolicy(
+                retryOptions: new RetryOptions<AuthTokenResponse>(t => !t.IsSuccess && retryErrors.Contains(t.Error),
+                    options.NumberOfRetries),
                 new TimeoutOptions(options.Timeout),
+                circuitBreakerOptions: new CircuitBreakerOptions<AuthTokenResponse>(breakPredicate: t => !t.IsSuccess && retryErrors.Contains(t.Error),
+                    options.NumberOfFailuresBeforeTrippingCircuitBreaker,
+                    options.CircuitBreakerBreakDuration,
+                   onBreakAction: (state, ts, ctx) => { _logger.LogError("Token circuit breaker tripped"); },
+                    onResetAction: ctx => { _logger.LogInformation("Token circuit breaker reset"); }),
                 fallbackOptions: new FallbackOptions<AuthTokenResponse>(
                     fallbackPredicate: r => !r.IsSuccess,
                     fallbackAction: (tokenResponse, ctx, cancellationToken) =>
