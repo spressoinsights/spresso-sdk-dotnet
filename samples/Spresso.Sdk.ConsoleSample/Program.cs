@@ -10,15 +10,14 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
+        
         var host = SetupDependencyInjection(args);
 
         var logger = host.Services.GetService<ILogger<Program>>();
         logger.LogInformation("Starting Console Test");
 
         var priceOptimizationHandler = host.Services.GetService<IPriceOptimizationHandler>();
-
-
-
+    
         var singleRequest = new GetPriceRequest("123", "456", 8.95m,
             userAgent: "Mozilla/5.0 (X11; Linux x86_64; Storebot-Google/1.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36");
         var secondRequest = new GetPriceRequest("123", "789", 18.95m);
@@ -28,7 +27,6 @@ public class Program
         {
             PrintPriceOptimization(singleResponse.PriceOptimization!);
         }
-
 
         var batchRequest = new GetPricesRequest(new[] { singleRequest, secondRequest }, userAgent: "Gio's Computer");
         var batchResponse = await priceOptimizationHandler.GetPricesAsync(batchRequest);
@@ -43,6 +41,17 @@ public class Program
             foreach (var po in batchResponse.PriceOptimizations)
                 PrintPriceOptimization(po);
         }
+
+        Console.WriteLine("Simplified price optimization handler");
+        var simplifiedPriceOptimizationHandler = new PriceOptimizationsHandler("test123", "secret");
+        var itemRequest = new GetPriceRequest("123", "49039", 18.95m);
+        var simplifiedSingleResponse = await simplifiedPriceOptimizationHandler.GetPriceAsync(itemRequest);
+        if (simplifiedSingleResponse.IsSuccess)
+        {
+            PrintPriceOptimization(simplifiedSingleResponse.PriceOptimization!);
+        }
+        Console.WriteLine("Requests execution finished. Press any key to exit.");
+        
         Console.ReadKey();
     }
 
@@ -83,7 +92,7 @@ public class Program
 
     private static void PrintPriceOptimization(PriceOptimization priceOptimization)
     {
-        Console.WriteLine($"Device: {priceOptimization.DeviceId}, Item: {priceOptimization.Sku}, Price: {priceOptimization.Price}");
+        Console.WriteLine($"Device: {priceOptimization.DeviceId}, Sku: {priceOptimization.Sku}, Price: {priceOptimization.Price}, IsPriceOptimized: {priceOptimization.IsPriceOptimized}");
     }
 }
 

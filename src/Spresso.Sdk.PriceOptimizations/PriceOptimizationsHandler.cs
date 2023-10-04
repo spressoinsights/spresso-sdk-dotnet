@@ -48,12 +48,37 @@ namespace Spresso.Sdk.PriceOptimizations
 
         private readonly ILogger<IPriceOptimizationHandler> _logger;
 
+         /// <summary>
+        ///     Initializes a new instance of the <see cref="PriceOptimizationsHandler" /> class.
+        /// </summary>
+        /// <param name="authTokenHandler">The instance of AuthTokenHandler</param>
+        /// <param name="options">Price optimization handler configuration</param>
         public PriceOptimizationsHandler(IAuthTokenHandler authTokenHandler,
             PriceOptimizationsHandlerOptions? options = null)
         {
             options ??= new PriceOptimizationsHandlerOptions();
             _logger = options.Logger;
             _authTokenHandler = authTokenHandler;
+            _httpClientFactory = options.SpressoHttpClientFactory;
+            _baseUrl = options.SpressoBaseUrl;
+            _httpTimeout = options.HttpTimeout;
+            _additionalParameters = options.AdditionalParameters;
+            _getPriceOptimizationPolicy = CreatePriceOptimizationResiliencyPolicy(options);
+            _getPriceOptimizationsBatchPolicy = CreatePriceOptimizationsBatchResiliencyPolicy(options);
+        }
+
+        /// <summary>
+        ///     Initializes a new instance of the <see cref="PriceOptimizationsHandler" /> class.
+        /// </summary>
+        /// <param name="clientId">The client key provided for your application(s)</param>
+        /// <param name="clientSecret">The client secret provided for your application(s)</param>
+        /// <param name="options">Price optimization handler configuration</param>
+        public PriceOptimizationsHandler(string clientId, string clientSecret,
+            PriceOptimizationsHandlerOptions? options = null)
+        {
+            options ??= new PriceOptimizationsHandlerOptions();
+            _logger = options.Logger;
+            _authTokenHandler = new AuthTokenHandler(clientId, clientSecret);
             _httpClientFactory = options.SpressoHttpClientFactory;
             _baseUrl = options.SpressoBaseUrl;
             _httpTimeout = options.HttpTimeout;
