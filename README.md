@@ -46,6 +46,7 @@ var batchResponse2 = priceOptimizationHandler.GetPricesAsync(
     }, userAgent: "google-bot"));
 
 ```
+Or
 
 ```csharp
 var priceOptimizationHandler = new PriceOptimizationsHandler("myClientId", "mySecret");
