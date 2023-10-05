@@ -10,7 +10,7 @@
 		<Title>Spresso Price Optimizations Sdk</Title>
 		<Authors>$(AssemblyName)</Authors>
 		<Company>Spresso</Company>
-		<Description>SDK that works with the Spresso Price Optimzation APIs to fetch optimal prices for a given set of products.</Description>
+		<Description>SDK that works with the Spresso Price Optimization APIs to fetch optimal prices for a given set of products.</Description>
 		<PackageProjectUrl>https://github.com/spressoinsights/spresso-sdk-dotnet</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/spressoinsights/spresso-sdk-dotnet</RepositoryUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
