@@ -5,7 +5,7 @@
 		<Nullable>enable</Nullable>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackAsTool>False</PackAsTool>
-		<Version>1.0.2.0-beta</Version>
+		<Version>1.0.2.0</Version>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<Title>Spresso Core Sdk</Title>
@@ -15,7 +15,7 @@
 		<PackageProjectUrl>https://github.com/spressoinsights/spresso-sdk-dotnet</PackageProjectUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryUrl>https://github.com/spressoinsights/spresso-sdk-dotnet</RepositoryUrl>
-		<PackageTags>spresso;boxed;spresso-core;sdk</PackageTags>
+		<PackageTags>spresso;spresso-core;sdk</PackageTags>
 		<PackageReleaseNotes>Initial release</PackageReleaseNotes>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	</PropertyGroup>
