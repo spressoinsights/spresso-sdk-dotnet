@@ -4,17 +4,17 @@
 		<TargetFramework>netstandard2.1</TargetFramework>
 		<Nullable>enable</Nullable>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Version>1.1.1-beta</Version>
+		<Version>1.1.1</Version>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<Title>Spresso Price Optimizations Sdk</Title>
 		<Authors>$(AssemblyName)</Authors>
 		<Company>Spresso</Company>
-		<Description>SDK that works with the Spresso Price Optimzation APIs to fetch optimal prices for a given set of products.</Description>
+		<Description>SDK that works with the Spresso Price Optimization APIs to fetch optimal prices for a given set of products.</Description>
 		<PackageProjectUrl>https://github.com/spressoinsights/spresso-sdk-dotnet</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/spressoinsights/spresso-sdk-dotnet</RepositoryUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageTags>spresso;boxed;spresso-price-optimizations;price-optimization;pricing;price;sdk</PackageTags>
+		<PackageTags>spresso;spresso-price-optimizations;price-optimization;pricing;price;sdk</PackageTags>
 		<PackageReleaseNotes>Initial release</PackageReleaseNotes>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Copyright>Copyright © 2023</Copyright>

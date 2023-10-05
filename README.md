@@ -17,7 +17,7 @@ Core SDKs that deal with
 Note that for best performance, `AuthTokenHandler` should should be a singleton and live for the lifetime of the application.
 
 ## Spresso.Sdk.PriceOptimizations
-SDK that works with the Spresso Price Optimzation APIs to fetch optimal prices for a given set of products.
+SDK that works with the Spresso Price Optimization APIs to fetch optimal prices for a given set of products.
 
 Note that for best performance, `PriceOptimizationsHandler` should should be a singleton and live for the lifetime of the application.
 
@@ -33,19 +33,28 @@ var authTokenHandler = new AuthTokenHandler("myClientId", "mySecret");
 var priceOptimizationHandler = new PriceOptimizationsHandler(authTokenHandler);
 
 // get a single price optimization
-var response = await priceOptimizationHandler.GetPriceOptimizationAsync(new GetPriceOptimizationRequest(deviceId: "device123", itemId: "item42", defaultPrice: 9.99m, userId: "9635345345534ad3", overrideToDefaultPrice: false, userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"));
+var response = await priceOptimizationHandler.GetPriceAsync(new GetPriceRequest(deviceId: "device123", sku: "sku42", defaultPrice: 9.99m, userId: "9635345345534ad3", overrideToDefaultPrice: false, userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"));
 
 // get price optimizaitons in a batch
-var batchResponse2 = priceOptimizationHandler.GetBatchPriceOptimizationsAsync(
-    new GetBatchPriceOptimizationsRequest(new[]
+var batchResponse2 = priceOptimizationHandler.GetPricesAsync(
+    new GetPricesRequest(new[]
     {
-        new GetPriceOptimizationRequest(deviceId: "123", itemId: "abc", defaultPrice: 19.99m, userId: "u42",
+        new GetPriceRequest(deviceId: "123", sku: "abc", defaultPrice: 19.99m, userId: "u42",
             overrideToDefaultPrice: false),
-        new GetPriceOptimizationRequest(deviceId: "456", itemId: "xyz", defaultPrice: 11.99m, userId: "u42",
+        new GetPriceRequest(deviceId: "456", sku: "xyz", defaultPrice: 11.99m, userId: "u42",
             overrideToDefaultPrice: false)
     }, userAgent: "google-bot"));
 
 ```
+Or
+
+```csharp
+var priceOptimizationHandler = new PriceOptimizationsHandler("myClientId", "mySecret");
+
+var response = await priceOptimizationHandler.GetPriceAsync(new GetPriceRequest(deviceId: "device123", sku: "sku42", defaultPrice: 9.99m, userId: "9635345345534ad3", overrideToDefaultPrice: false);
+
+```
+
 ## Mock Server
 This repository included a Mock Server that can be used for testing different SDKs (in any language), for testing integrations, and for testing error scenarios.
 
@@ -58,12 +67,12 @@ cd ./tests/Spresso.MockApi && dotnet run
 #### To test different response codes, add the following query parameters to the web request:
 `status=<status code>` - will return the specified status code
 
-example: `https://localhost:7176/pim/v1/priceoptimizations?status=500`
+example: `https://localhost:7176/pim/v1/prices?status=500`
 
 #### To test different response times, add the following query parameters to the web request:
 `delay=<delay in seconds>` - will delay the response by the specified amount of time
 
-example: `https://localhost:7176/pim/v1/priceoptimizations?delay=5`
+example: `https://localhost:7176/pim/v1/prices?delay=5`
 
 Note: if testing via the SDK, you can use the `AdditionalParameters` property to add these query parameters to the request.
 

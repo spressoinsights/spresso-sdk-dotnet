@@ -6,9 +6,9 @@ namespace Spresso.MockApi.Controllers;
 [Route("pim/v1")]
 public class PriceOptimizationsController : Controller
 {
-    [HttpGet("priceOptimizations")]
+    [HttpGet("prices")]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(Response<PriceOptimization>), 200)]
+    [ProducesResponseType(typeof(PriceOptimization), 200)]
     [ProducesResponseType(typeof(OAuthTokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(void), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized)]
@@ -29,22 +29,19 @@ public class PriceOptimizationsController : Controller
 
 
         if (request.OverrideToDefaultPrice)
-            return Ok(new Response<PriceOptimization>(new PriceOptimization(request.ItemId!, request.DeviceId!,
-                request.DefaultPrice, false, request.UserId)));
+            return Ok(new PriceOptimization(request.Sku!, request.DeviceId!,
+                request.DefaultPrice, false, request.UserId));
 
         var defaultPriceInt = (int)(request.DefaultPrice * 100);
         var rangeInt = (int)(0.1m * defaultPriceInt);
 
         var price = Random.Shared.Next(defaultPriceInt - rangeInt, defaultPriceInt + rangeInt) / 100m;
-        return Ok(new
-        {
-            data = new PriceOptimization(request.ItemId!, request.DeviceId!, price, true, request.UserId)
-        });
+        return Ok(new PriceOptimization(request.Sku!, request.DeviceId!, price, true, request.UserId));
     }
 
-    [HttpPost("priceOptimizations")]
+    [HttpPost("prices")]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(Response<PriceOptimization[]>), 200)]
+    [ProducesResponseType(typeof(PriceOptimization[]), 200)]
     [ProducesResponseType(typeof(OAuthTokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(void), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized)]
@@ -64,13 +61,13 @@ public class PriceOptimizationsController : Controller
             return Unauthorized();
 
         
-        if (request.Items!.Length > 500) return BadRequest("Batch size cannot be greater than 500");
+        if (request.Requests!.Length > 500) return BadRequest("Batch size cannot be greater than 500");
 
-        var response = new List<PriceOptimization>(request.Items.Length);
-        foreach (var pricingRef in request.Items)
+        var response = new List<PriceOptimization>(request.Requests.Length);
+        foreach (var pricingRef in request.Requests)
             if (pricingRef.OverrideToDefaultPrice)
             {
-                response.Add(new PriceOptimization(pricingRef.ItemId!, pricingRef.DeviceId!, pricingRef.DefaultPrice,
+                response.Add(new PriceOptimization(pricingRef.Sku!, pricingRef.DeviceId!, pricingRef.DefaultPrice,
                     false, pricingRef.UserId));
             }
             else
@@ -79,11 +76,11 @@ public class PriceOptimizationsController : Controller
                 var rangeInt = (int)(0.1m * defaultPriceInt);
 
                 var price = Random.Shared.Next(defaultPriceInt - rangeInt, defaultPriceInt + rangeInt) / 100m;
-                response.Add(new PriceOptimization(pricingRef.ItemId!, pricingRef.DeviceId!, price, true,
+                response.Add(new PriceOptimization(pricingRef.Sku!, pricingRef.DeviceId!, price, true,
                     pricingRef.UserId));
             }
 
-        return Ok(new Response<List<PriceOptimization>>(response));
+        return Ok(response);
     }
 
     [HttpGet("priceOptimizationOrgConfig")]
@@ -109,19 +106,19 @@ public class PriceOptimizationsController : Controller
 
     public class GetBatchPriceOptimizationsRequest
     {
-        public GetSinglePriceOptimizationRequest[]? Items { get; set; }
+        public GetSinglePriceOptimizationRequest[]? Requests { get; set; }
     }
 
     public class GetSinglePriceOptimizationRequest
     {
-        public string? ItemId { get; set; }
+        public string? Sku { get; set; }
         public string? DeviceId { get; set; }
         public string? UserId { get; set; } = default;
         public decimal DefaultPrice { get; set; }
         public bool OverrideToDefaultPrice { get; set; }
     }
 
-    public record PriceOptimization(string ItemId, string DeviceId, decimal Price, bool isPriceOptimized,
+    public record PriceOptimization(string Sku, string DeviceId, decimal Price, bool isPriceOptimized,
         string? UserId = default);
 
 
