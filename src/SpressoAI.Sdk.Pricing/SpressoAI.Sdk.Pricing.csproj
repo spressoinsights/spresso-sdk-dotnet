@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<Nullable>enable</Nullable>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Version>1.1.1</Version>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<Title>Spresso Price Optimizations Sdk</Title>
+		<Authors>$(AssemblyName)</Authors>
+		<Company>Spresso</Company>
+		<Description>SDK that works with the Spresso Price Optimization APIs to fetch optimal prices for a given set of products.</Description>
+		<PackageProjectUrl>https://github.com/spressoinsights/spresso-sdk-dotnet</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/spressoinsights/spresso-sdk-dotnet</RepositoryUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageTags>spresso;spresso-price-optimizations;price-optimization;pricing;price;sdk</PackageTags>
+		<PackageReleaseNotes>Initial release</PackageReleaseNotes>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<Copyright>Copyright © 2023</Copyright>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <None Include="..\..\README.md">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="7.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\SpressoAI.Sdk.Core\SpressoAI.Sdk.Core.csproj" />
+	</ItemGroup>
+
+</Project>

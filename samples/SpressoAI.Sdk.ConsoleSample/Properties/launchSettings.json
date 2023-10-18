@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "SpressoAI.Sdk.ConsoleSample": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "SPRESSO_BASE_AUTH_URL": "https://localhost:7176/"
+      }
+    }
+  }
+}

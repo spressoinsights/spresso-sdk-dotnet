@@ -1,47 +1,47 @@
-# Spresso.Sdk
+# SpressoAI.Sdk
 
 This repository contains all of the .net SDKs for calling the [Spresso](https://www.spresso.com/) API.
 
 
 | Package | Link |
 |---------|------|
-| Core SDK | [![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/Spresso.Sdk.Core)](https://www.nuget.org/packages/Spresso.Sdk.Core) |
-| Price Optimizations | ![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/Spresso.Sdk.PriceOptimizations) |
+| Core SDK | [![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/SpressoAI.Sdk.Core)](https://www.nuget.org/packages/SpressoAI.Sdk.Core) |
+| Price Optimizations | ![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/SpressoAI.Sdk.Pricing) |
 
 
-## Spresso.Sdk.Core
+## SpressoAI.Sdk.Core
 Core SDKs that deal with
 * Authentication
 * Resilient API calls
 
 Note that for best performance, `AuthTokenHandler` should should be a singleton and live for the lifetime of the application.
 
-## Spresso.Sdk.PriceOptimizations
+## SpressoAI.Sdk.Pricing
 SDK that works with the Spresso Price Optimization APIs to fetch optimal prices for a given set of products.
 
-Note that for best performance, `PriceOptimizationsHandler` should should be a singleton and live for the lifetime of the application.
+Note that for best performance, `SpressoHandler` should should be a singleton and live for the lifetime of the application.
 
 By default this SDK tries it's best to always return an answer in a fixed amount of time, using default pricing.  The `IsSuccess` will let you know if the response came from the API or was the fallback price.  The `Error` property will inform you of what went wrong.
 
-Fallback behavior can be disabled by setting `PriceOptimizationsHandlerOptions.ThrowOnFailure` to `true`.
+Fallback behavior can be disabled by setting `SpressoHandlerOptions.ThrowOnFailure` to `true`.
 
 This SDK will handle tokens for you and will return the default price if a bot is detected.
 
 ### Quickstart
 ```csharp
 var authTokenHandler = new AuthTokenHandler("myClientId", "mySecret");
-var priceOptimizationHandler = new PriceOptimizationsHandler(authTokenHandler);
+var spressoHandler = new SpressoHandler(authTokenHandler);
 
 // get a single price optimization
-var response = await priceOptimizationHandler.GetPriceAsync(new GetPriceRequest(deviceId: "device123", sku: "sku42", defaultPrice: 9.99m, userId: "9635345345534ad3", overrideToDefaultPrice: false, userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"));
+var response = await spressoHandler.GetPriceAsync(new GetPriceRequest(deviceId: "device123", itemId: "itemId42", defaultPrice: 9.99m, userId: "9635345345534ad3", overrideToDefaultPrice: false, userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"));
 
 // get price optimizaitons in a batch
-var batchResponse2 = priceOptimizationHandler.GetPricesAsync(
+var batchResponse2 = spressoHandler.GetPricesAsync(
     new GetPricesRequest(new[]
     {
-        new GetPriceRequest(deviceId: "123", sku: "abc", defaultPrice: 19.99m, userId: "u42",
+        new GetPriceRequest(deviceId: "123", itemId: "abc", defaultPrice: 19.99m, userId: "u42",
             overrideToDefaultPrice: false),
-        new GetPriceRequest(deviceId: "456", sku: "xyz", defaultPrice: 11.99m, userId: "u42",
+        new GetPriceRequest(deviceId: "456", itemId: "xyz", defaultPrice: 11.99m, userId: "u42",
             overrideToDefaultPrice: false)
     }, userAgent: "google-bot"));
 
@@ -49,9 +49,9 @@ var batchResponse2 = priceOptimizationHandler.GetPricesAsync(
 Or
 
 ```csharp
-var priceOptimizationHandler = new PriceOptimizationsHandler("myClientId", "mySecret");
+var spressoHandler = new SpressoHandler("myClientId", "mySecret");
 
-var response = await priceOptimizationHandler.GetPriceAsync(new GetPriceRequest(deviceId: "device123", sku: "sku42", defaultPrice: 9.99m, userId: "9635345345534ad3", overrideToDefaultPrice: false);
+var response = await spressoHandler.GetPriceAsync(new GetPriceRequest(deviceId: "device123", itemId: "itemId42", defaultPrice: 9.99m, userId: "9635345345534ad3", overrideToDefaultPrice: false);
 
 ```
 
@@ -60,7 +60,7 @@ This repository included a Mock Server that can be used for testing different SD
 
 ### To Run:
 ``` bash
-cd ./tests/Spresso.MockApi && dotnet run
+cd ./tests/SpressoAI.MockApi && dotnet run
 ```
 
 ### Forced Error Conditions:
@@ -95,7 +95,7 @@ For help, run `nuke --help`
 If you do not have nuke installed, you can also substitute `nuke` with `build.cmd`, `build.ps1`, or `build.sh`, depending on your platform.
 
 ## Benchmarks
-To run benchmarks, build `tests/Spresso.Sdk.Benchmarks` in `Release` mode, then run `Spresso.Sdk.Benchmarks`.
+To run benchmarks, build `tests/SpressoAI.Sdk.Benchmarks` in `Release` mode, then run `SpressoAI.Sdk.Benchmarks`.
 
-[Historical Benchmarks](/tests/Spresso.Sdk.Benchmarks/History)
+[Historical Benchmarks](/tests/SpressoAI.Sdk.Benchmarks/History)
 					   
