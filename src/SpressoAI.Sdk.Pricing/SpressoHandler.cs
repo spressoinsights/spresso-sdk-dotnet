@@ -79,8 +79,12 @@ namespace SpressoAI.Sdk.Pricing
             SpressoHandlerOptions? options = null)
         {
             options ??= new SpressoHandlerOptions();
+            var authOptions = new AuthTokenHandlerOptions
+            {
+                SpressoBaseAuthUrl = options.SpressoBaseUrl // in case this is overridden in options, we use the same overridde for auth
+            };
             _logger = options.Logger;
-            _authTokenHandler = new AuthTokenHandler(clientId, clientSecret);
+            _authTokenHandler = new AuthTokenHandler(clientId, clientSecret, authOptions);
             _httpClientFactory = options.SpressoHttpClientFactory;
             _baseUrl = options.SpressoBaseUrl;
             _httpTimeout = options.HttpTimeout;
@@ -286,7 +290,7 @@ namespace SpressoAI.Sdk.Pricing
             };
             var requestJson = JsonConvert.SerializeObject(batchApiRequest, _jsonSerializerSettings);
 
-            return await ExecutePostApiRequestAsync(httpClient, CatalogUpdatesEndpoint, requestJson, async responseJson =>
+            return await ExecutePutApiRequestAsync(httpClient, CatalogUpdatesEndpoint, requestJson, async responseJson =>
             {
                 return new CatalogUpdateResponse();
             }, e => new CatalogUpdateResponse(e), cancellationToken);
@@ -417,6 +421,18 @@ namespace SpressoAI.Sdk.Pricing
                 cancellationToken);
         }
 
+        private Task<T> ExecutePutApiRequestAsync<T>(HttpClient httpClient, string requestUri, string requestJson,
+            Func<string, Task<T>> onSuccessFunc,
+            Func<SpressoError, T> onFailureFunc, CancellationToken cancellationToken)
+        {
+            return httpClient.ExecutePutApiRequestAsync(requestUri, requestJson,
+                onSuccessFunc: (apiResponseJson, httpStatus) => onSuccessFunc(apiResponseJson),
+                onAuthErrorFailure: statusCode => onFailureFunc(SpressoError.AuthError),
+                onBadRequestFailure: () => onFailureFunc(SpressoError.BadRequest),
+                onTimeoutFailure: exception => onFailureFunc(SpressoError.Timeout),
+                onUnknownFailure: (exception, code) => onFailureFunc(SpressoError.Unknown),
+                cancellationToken);
+        }
 
         private HttpClient GetHttpClient(string token)
         {

@@ -43,7 +43,11 @@ public class Program
         }
 
         Console.WriteLine("Simplified price optimization handler");
-        var simplifiedSpressoHandler = new SpressoHandler("nWJlSNP9j9TduFXA0MzaXYy3L9fwiGF5", "iHxjYIXD_GRhZ2AKCfesYDpWDMxA7LRVh92Z994CmCCkogEWLY9EsQP3QbdqA4-A");
+        var options = new SpressoHandlerOptions
+        {
+            SpressoBaseUrl = Environment.GetEnvironmentVariable("SPRESSO_BASE_AUTH_URL")
+        };
+        var simplifiedSpressoHandler = new SpressoHandler("test123", "secret", options);
         var itemRequest = new GetPriceRequest("Device-789", "AAHV16", 18.95m);
         var simplifiedSingleResponse = await simplifiedSpressoHandler.GetPriceAsync(itemRequest);
         if (simplifiedSingleResponse.IsSuccess)
@@ -51,7 +55,7 @@ public class Program
             PrintPriceOptimization(simplifiedSingleResponse.PriceOptimization!);
         }
 
-        var updateRequest = new CatalogUpdatesRequest(new [] { new CatalogUpdateRequest("foobar-1", "kk test sku", 12.34m, 9.99m) });
+        var updateRequest = new CatalogUpdatesRequest(new [] { new CatalogUpdateRequest("foobar-1", "hello world test sku", 43.12m, 1.23m) });
         var catalogUpdateResponse = await simplifiedSpressoHandler.UpdateCatalogAsync(updateRequest);
         if (catalogUpdateResponse.IsSuccess) {
             Console.WriteLine("Update completed successfully");
@@ -59,7 +63,7 @@ public class Program
             Console.WriteLine($"Error: {catalogUpdateResponse.Error}");
         }
 
-        var verificationRequest = new PriceVerificationsRequest(new [] { new PriceVerificationRequest("EZZL2", 4.49m, "Device-789") });
+        var verificationRequest = new PriceVerificationsRequest(new [] { new PriceVerificationRequest("EZZL2", 4.39m, "Device-789") });
         var verificationResponse = await simplifiedSpressoHandler.VerifyPricesAsync(verificationRequest);
         if (verificationResponse.IsSuccess) {
             foreach (var response in verificationResponse.PriceVerifications)
@@ -84,18 +88,18 @@ public class Program
                 services.AddSingleton(sp => new AuthTokenHandlerOptions
                 {
                     AdditionalParameters = "",
-                    SpressoBaseAuthUrl = "https://api.staging.spresso.com",
+                    SpressoBaseAuthUrl = Environment.GetEnvironmentVariable("SPRESSO_BASE_AUTH_URL"),
                     Logger = sp.GetService<ILogger<IAuthTokenHandler>>(),
                     Timeout = new TimeSpan(0, 0, 179),
                     HttpTimeout = new TimeSpan(0, 0, 90)
                 });
                 services.AddSingleton<IAuthTokenHandler, AuthTokenHandler>(
-                    sp => new AuthTokenHandler("nWJlSNP9j9TduFXA0MzaXYy3L9fwiGF5", "iHxjYIXD_GRhZ2AKCfesYDpWDMxA7LRVh92Z994CmCCkogEWLY9EsQP3QbdqA4-A", sp.GetRequiredService<AuthTokenHandlerOptions>()));
+                    sp => new AuthTokenHandler("test123", "secret", sp.GetRequiredService<AuthTokenHandlerOptions>()));
                 services.AddSingleton(
                     sp =>
                         new SpressoHandlerOptions
                         {
-                            SpressoBaseUrl = "https://api.staging.spresso.com",
+                            SpressoBaseUrl = Environment.GetEnvironmentVariable("SPRESSO_BASE_AUTH_URL"),
                             AdditionalParameters = "",
                             Timeout = new TimeSpan(0, 0, 179),
                             HttpTimeout = new TimeSpan(0,0,90),

@@ -6,6 +6,14 @@ using System.Threading.Tasks;
 
 namespace SpressoAI.Sdk.Pricing
 {
+
+    public enum PriceVerificationStatus : byte
+    {
+        Invalid = 0,
+        SpressoPrice = 1,
+        DevicePrice = 2
+    }
+
     public interface ISpressoHandler
     {
         /// <summary>
@@ -276,10 +284,10 @@ namespace SpressoAI.Sdk.Pricing
         public string ItemId { get; }
         public string DeviceId { get; }
         public decimal Price { get; }
-        public string PriceStatus { get; }
+        public PriceVerificationStatus PriceStatus { get; }
         public decimal? CurrentValidPrice { get; }
 
-        public PriceVerification(string itemId, string deviceId, decimal price, string priceStatus, decimal? currentValidPrice)
+        public PriceVerification(string itemId, string deviceId, decimal price, PriceVerificationStatus priceStatus, decimal? currentValidPrice)
         {
             ItemId = itemId;
             DeviceId = deviceId;
