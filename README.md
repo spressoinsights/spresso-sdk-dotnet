@@ -6,7 +6,7 @@ This repository contains all of the .net SDKs for calling the [Spresso](https://
 | Package | Link |
 |---------|------|
 | Core SDK | [![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/SpressoAI.Sdk.Core)](https://www.nuget.org/packages/SpressoAI.Sdk.Core) |
-| Price Optimizations | ![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/SpressoAI.Sdk.Pricing) |
+| Pricing SDK | [![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/SpressoAI.Sdk.Pricing)](https://www.nuget.org/packages/SpressoAI.Sdk.Pricing) |
 
 
 ## SpressoAI.Sdk.Core
