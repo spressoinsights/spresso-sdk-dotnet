@@ -55,7 +55,9 @@ public class Program
             PrintPriceOptimization(simplifiedSingleResponse.PriceOptimization!);
         }
 
-        var updateRequest = new CatalogUpdatesRequest(new [] { new CatalogUpdateRequest("foobar-1", "hello world test sku", 43.12m, 1.23m) });
+        var updateRequest = new CatalogUpdatesRequest(new []
+            { new CatalogUpdateRequest("foobar-1", "hello world test sku", 43.12m, 1.23m) }
+        );
         var catalogUpdateResponse = await simplifiedSpressoHandler.UpdateCatalogAsync(updateRequest);
         if (catalogUpdateResponse.IsSuccess) {
             Console.WriteLine("Update completed successfully");
@@ -63,7 +65,9 @@ public class Program
             Console.WriteLine($"Error: {catalogUpdateResponse.Error}");
         }
 
-        var verificationRequest = new PriceVerificationsRequest(new [] { new PriceVerificationRequest("EZZL2", 4.39m, "Device-789") });
+        var verificationRequest = new PriceVerificationsRequest(new []
+            { new PriceVerificationRequest("EZZL2", 4.39m, "Device-789") }
+        );
         var verificationResponse = await simplifiedSpressoHandler.VerifyPricesAsync(verificationRequest);
         if (verificationResponse.IsSuccess) {
             foreach (var response in verificationResponse.PriceVerifications)
