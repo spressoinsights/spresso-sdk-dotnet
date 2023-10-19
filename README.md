@@ -21,38 +21,47 @@ SDK that works with the Spresso Price Optimization APIs to fetch optimal prices 
 
 Note that for best performance, `SpressoHandler` should should be a singleton and live for the lifetime of the application.
 
-By default this SDK tries it's best to always return an answer in a fixed amount of time, using default pricing.  The `IsSuccess` will let you know if the response came from the API or was the fallback price.  The `Error` property will inform you of what went wrong.
+By default this SDK tries its best to always return an answer in a fixed amount of time. The `IsSuccess` flag will let you know if the response succeeded. The `Error` property will inform you of what went wrong.
 
 Fallback behavior can be disabled by setting `SpressoHandlerOptions.ThrowOnFailure` to `true`.
 
-This SDK will handle tokens for you and will return the default price if a bot is detected.
+This SDK will handle tokens for you and for any price optimization queries, will return the default price if a bot is detected.
 
 ### Quickstart
 ```csharp
-var authTokenHandler = new AuthTokenHandler("myClientId", "mySecret");
-var spressoHandler = new SpressoHandler(authTokenHandler);
+var spressoHandler = new SpressoHandler("myClientId", "mySecret");
 
 // get a single price optimization
-var response = await spressoHandler.GetPriceAsync(new GetPriceRequest(deviceId: "device123", itemId: "itemId42", defaultPrice: 9.99m, userId: "9635345345534ad3", overrideToDefaultPrice: false, userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"));
+var response = await spressoHandler.GetPriceAsync(
+    new GetPriceRequest(
+        deviceId: "Device-123",
+        itemId: "itemId42",
+        defaultPrice: 9.99m,
+        userId: "9635345345534ad3",
+        overrideToDefaultPrice: false,
+        userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
+    )
+);
 
 // get price optimizaitons in a batch
 var batchResponse2 = spressoHandler.GetPricesAsync(
     new GetPricesRequest(new[]
     {
-        new GetPriceRequest(deviceId: "123", itemId: "abc", defaultPrice: 19.99m, userId: "u42",
-            overrideToDefaultPrice: false),
-        new GetPriceRequest(deviceId: "456", itemId: "xyz", defaultPrice: 11.99m, userId: "u42",
-            overrideToDefaultPrice: false)
+        new GetPriceRequest(deviceId: "Device-123", itemId: "abc", defaultPrice: 19.99m, userId: "u42", overrideToDefaultPrice: false),
+        new GetPriceRequest(deviceId: "Device-123", itemId: "xyz", defaultPrice: 11.99m, userId: "u42", overrideToDefaultPrice: false)
     }, userAgent: "google-bot"));
 
-```
-Or
+// update a catalog entry
+var updateRequest = new CatalogUpdatesRequest(new []
+    { new CatalogUpdateRequest("SKU-1", "my amazing product", 12.34m, 9.87m) }
+);
+var catalogUpdateResponse = await spressoHandler.UpdateCatalogAsync(updateRequest);
 
-```csharp
-var spressoHandler = new SpressoHandler("myClientId", "mySecret");
-
-var response = await spressoHandler.GetPriceAsync(new GetPriceRequest(deviceId: "device123", itemId: "itemId42", defaultPrice: 9.99m, userId: "9635345345534ad3", overrideToDefaultPrice: false);
-
+// verify a price
+var verificationRequest = new PriceVerificationsRequest(new []
+    { new PriceVerificationRequest("SKU-1", 1.23m, "Device-123") }
+);
+var verificationResponse = await spressoHandler.VerifyPricesAsync(verificationRequest);
 ```
 
 ## Mock Server
