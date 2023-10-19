@@ -90,7 +90,7 @@ class Build : NukeBuild
         {
             foreach (var sdk in GetSdkProjects())
             {
-                var name = sdk.Name.Replace("Spresso.Sdk.", "");
+                var name = sdk.Name.Replace("SpressoAI.Sdk.", "");
                 name = name.Kebaberize();
                 Console.WriteLine(Crayon.Output.Magenta(name));
             }
