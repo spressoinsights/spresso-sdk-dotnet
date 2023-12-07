@@ -107,9 +107,19 @@ namespace SpressoAI.Sdk.Pricing
         }
 
         /// <inheritdoc cref="ISpressoHandler.GetPriceAsync" />
-        public async Task<GetPriceResponse> GetPriceAsync(GetPriceRequest request,
-            CancellationToken cancellationToken = default)
-        {
+        public async Task<GetPriceResponse> GetPriceAsync(
+            GetPriceRequest request,
+            CancellationToken cancellationToken = default
+        ) {
+            return await GetPriceAsync(request, null, null, cancellationToken);
+        }
+
+        public async Task<GetPriceResponse> GetPriceAsync(
+            GetPriceRequest request,
+            string? originalIP,
+            Dictionary<string, string>? httpHeaders,
+            CancellationToken cancellationToken = default
+        ) {
             const string logNamespace = "@@GetPriceAsync@@";
             
             var executionResult = await _getPriceOptimizationPolicy.ExecuteAsync(async () =>
@@ -189,10 +199,18 @@ namespace SpressoAI.Sdk.Pricing
         /// <inheritdoc cref="ISpressoHandler.GetPricesAsync" />
         public async Task<GetPricesResponse> GetPricesAsync(
             GetPricesRequest request,
-            CancellationToken cancellationToken = default)
-        {
-            const string logNamespace = "@@GetPricesAsync@@";
+            CancellationToken cancellationToken = default
+        ) {
+            return await GetPricesAsync(request, null, null, cancellationToken);
+        }
 
+        public async Task<GetPricesResponse> GetPricesAsync(
+            GetPricesRequest request,
+            string? originalIP,
+            Dictionary<string, string>? httpHeaders,
+            CancellationToken cancellationToken = default
+        ) {
+            const string logNamespace = "@@GetPricesAsync@@";
             var executionResult = await _getPriceOptimizationBatchPolicy.ExecuteAsync(async () =>
             {
                 var poRequests = request.Requests.ToList();
@@ -282,12 +300,10 @@ namespace SpressoAI.Sdk.Pricing
              */
             var someOptimized = requests.Any(request => optimizedSkus.Skus.Contains(request.ItemId));
             if (optimizedSkus.SkipInactive && !someOptimized) {
-                Console.WriteLine("All SKUs are non-optimized, short-circuiting...");
                 _logger.LogDebug("All SKUs are non-optimized, short-circuiting...");
                 return true;
             }
 
-            Console.WriteLine("Found optimized SKU, making API request...");
             _logger.LogDebug("Found optimized SKU, making API request...");
             return false;
         }
@@ -345,10 +361,8 @@ namespace SpressoAI.Sdk.Pricing
             var query = "/pim/v1/variants/optimizedSKUs";
             return await ExecuteGetApiRequestAsync(httpClient, query, jsonResponse =>
             {
-                Console.WriteLine("Fetching Opt Skus");
                 var result = ProcessOptimizedSkuResponse(jsonResponse);
                 _logger.LogDebug("{0} cache miss", OptimizedSkusKey);
-                Console.WriteLine($"Exp Time: {DateTimeOffset.FromUnixTimeSeconds(result.ExpiresAt)}");
                 _cache.SetStringAsync(OptimizedSkusKey, jsonResponse, 
                     new DistributedCacheEntryOptions
                     {
@@ -518,7 +532,9 @@ namespace SpressoAI.Sdk.Pricing
 
         private Task<T> ExecutePostApiRequestAsync<T>(HttpClient httpClient, string requestUri, string requestJson,
             Func<string, Task<T>> onSuccessFunc,
-            Func<SpressoError, T> onFailureFunc, CancellationToken cancellationToken)
+            Func<SpressoError, T> onFailureFunc, CancellationToken cancellationToken,
+            string? originalIP = null, Dictionary<string, string>? httpHeaders = null
+            )
         {
             return httpClient.ExecutePostApiRequestAsync(requestUri, requestJson,
                 onSuccessFunc: (apiResponseJson, httpStatus) => onSuccessFunc(apiResponseJson),
@@ -526,12 +542,14 @@ namespace SpressoAI.Sdk.Pricing
                 onBadRequestFailure: () => onFailureFunc(SpressoError.BadRequest),
                 onTimeoutFailure: exception => onFailureFunc(SpressoError.Timeout),
                 onUnknownFailure: (exception, code) => onFailureFunc(SpressoError.Unknown),
-                cancellationToken);
+                cancellationToken, originalIP, httpHeaders);
         }
 
         private Task<T> ExecuteGetApiRequestAsync<T>(HttpClient httpClient, string requestUri,
             Func<string, Task<T>> onSuccessFunc,
-            Func<SpressoError, T> onFailureFunc, CancellationToken cancellationToken)
+            Func<SpressoError, T> onFailureFunc, CancellationToken cancellationToken,
+            string? originalIP = null, Dictionary<string, string>? httpHeaders = null
+            )
         {
             return httpClient.ExecuteGetApiRequestAsync(requestUri,
                 onSuccessFunc: (apiResponseJson, httpStatus) => onSuccessFunc(apiResponseJson),
@@ -539,7 +557,7 @@ namespace SpressoAI.Sdk.Pricing
                 onBadRequestFailure: () => onFailureFunc(SpressoError.BadRequest),
                 onTimeoutFailure: exception => onFailureFunc(SpressoError.Timeout),
                 onUnknownFailure: (exception, code) => onFailureFunc(SpressoError.Unknown),
-                cancellationToken);
+                cancellationToken, originalIP, httpHeaders);
         }
 
         private Task<T> ExecutePutApiRequestAsync<T>(HttpClient httpClient, string requestUri, string requestJson,

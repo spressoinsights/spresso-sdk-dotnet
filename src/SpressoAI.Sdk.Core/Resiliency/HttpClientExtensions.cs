@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System;
 using System.Net.Http.Headers;
+using System.Collections.Generic;
 
 namespace SpressoAI.Sdk.Core.Resiliency
 {
@@ -30,12 +31,17 @@ namespace SpressoAI.Sdk.Core.Resiliency
             Func<T> onBadRequestFailure,
             Func<Exception?, T> onTimeoutFailure,
             Func<Exception?, HttpStatusCode?, T> onUnknownFailure,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            string? originalIP = null,
+            Dictionary<string, string>? httpHeaders = null
+            )
         {
             try
             {
-                var apiResponse = await httpClient.PostAsync(requestUri, new StringContent(requestJson, Encoding.UTF8, "application/json"),
-                    cancellationToken);
+                var message = new HttpRequestMessage(HttpMethod.Post, requestUri);
+                AddHeaders(message, originalIP, httpHeaders);
+                message.Content = new StringContent(requestJson, Encoding.UTF8, "application/json");
+                var apiResponse = await httpClient.SendAsync(message, cancellationToken);
 
                 if (apiResponse.IsSuccessStatusCode)
                 {
@@ -86,11 +92,15 @@ namespace SpressoAI.Sdk.Core.Resiliency
             Func<T> onBadRequestFailure,
             Func<Exception?, T> onTimeoutFailure,
             Func<Exception?, HttpStatusCode?, T> onUnknownFailure,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            string? originalIP = null,
+            Dictionary<string, string>? httpHeaders = null)
         {
             try
             {
-                var apiResponse = await httpClient.GetAsync(requestUri, cancellationToken);
+                var message = new HttpRequestMessage(HttpMethod.Get, requestUri);
+                AddHeaders(message, originalIP, httpHeaders);
+                var apiResponse = await httpClient.SendAsync(message, cancellationToken);
 
                 if (apiResponse.IsSuccessStatusCode)
                 {
@@ -165,5 +175,16 @@ namespace SpressoAI.Sdk.Core.Resiliency
             }
         }
 
+        private static void AddHeaders(HttpRequestMessage message, string? originalIP = null, Dictionary<string, string>? httpHeaders = null) {
+            if (originalIP != null && originalIP.Trim().Length > 0) {
+                message.Headers.Add("x-real-ip", originalIP);
+            }
+            if (httpHeaders != null) {
+                if (httpHeaders.ContainsKey("cookie")) {
+                    message.Headers.Add("cookie", httpHeaders.GetValueOrDefault("cookie"));
+                }
+                // Add other headers as needed
+            }
+        }
     }
 }

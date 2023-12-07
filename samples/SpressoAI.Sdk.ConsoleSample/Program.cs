@@ -10,74 +10,75 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        Console.WriteLine("Hello, World!");
-        var spressoHandler = new SpressoHandler("JPgYKJF9JlXFPOrzbNox7WICpn4i7eWv", "SM4BfSMnP8FNgRRCtsSaWQsb0KpEXv4i65jRYxi2AOiVhpJpi7e0_qTFjtlSyB2U");
+        
+        var host = SetupDependencyInjection(args);
 
-        Thread.Sleep(2000);
+        var logger = host.Services.GetService<ILogger<Program>>();
+        logger.LogInformation("Starting Console Test");
 
-        var itemRequest = new GetPriceRequest("Device-123", "AAGE25", 18.95m, null, false, "foobarbaz useragent");
-        var singleResponse = await spressoHandler.GetPriceAsync(itemRequest);
-        if (!singleResponse.IsSuccess)
+        var spressoHandler = host.Services.GetService<ISpressoHandler>();
+    
+        var singleRequest = new GetPriceRequest("Device-789", "ESPS2", 8.95m,
+            userAgent: "Mozilla/5.0 (X11; Linux x86_64; Storebot-Google/1.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36");
+        var secondRequest = new GetPriceRequest("Device-789", "EZZL2", 18.95m);
+
+        var singleResponse = await spressoHandler.GetPriceAsync(singleRequest);
+        if (singleResponse.IsSuccess)
         {
-            Console.WriteLine($"Error: {singleResponse.Error}");
+            PrintPriceOptimization(singleResponse.PriceOptimization!);
         }
-        Console.WriteLine($"ItemId: {singleResponse.PriceOptimization?.ItemId}, Price: {singleResponse.PriceOptimization?.Price}, Optimized: {singleResponse.PriceOptimization?.IsPriceOptimized}");
 
-        var start = DateTimeOffset.UtcNow;
-        var itemRequest2 = new GetPriceRequest("spressoapidelay-500", "AAGE25", 18.95m, null, false, "foobarbaz useragent");
-        var singleResponse2 = await spressoHandler.GetPriceAsync(itemRequest2);
-        if (!singleResponse2.IsSuccess)
+        var batchRequest = new GetPricesRequest(new[] { singleRequest, secondRequest }, userAgent: "Gio's Computer");
+        var batchResponse = await spressoHandler.GetPricesAsync(batchRequest);
+   
+        if (batchResponse.IsSuccess)
         {
-            Console.WriteLine($"Error: {singleResponse2.Error}");
+            foreach (var po in batchResponse.PriceOptimizations)
+                PrintPriceOptimization(po);
         }
-        Console.WriteLine($"ItemId: {singleResponse2.PriceOptimization?.ItemId}, Price: {singleResponse2.PriceOptimization?.Price}, Optimized: {singleResponse2.PriceOptimization?.IsPriceOptimized}");
-        var end = DateTimeOffset.UtcNow;
-        Console.WriteLine($"Req2 Time: {end.ToUnixTimeMilliseconds() - start.ToUnixTimeMilliseconds()}ms");
-
-        Thread.Sleep(5 * 60 * 1000);
-
-        start = DateTimeOffset.UtcNow;
-        var itemRequest3 = new GetPriceRequest("spressoapidelay-500", "foosku", 18.95m, null, false, "foobarbaz useragent");
-        var singleResponse3 = await spressoHandler.GetPriceAsync(itemRequest3);
-        if (!singleResponse3.IsSuccess)
+        else
         {
-            Console.WriteLine($"Error: {singleResponse3.Error}");
+            foreach (var po in batchResponse.PriceOptimizations)
+                PrintPriceOptimization(po);
         }
-        Console.WriteLine($"ItemId: {singleResponse3.PriceOptimization?.ItemId}, Price: {singleResponse3.PriceOptimization?.Price}, Optimized: {singleResponse3.PriceOptimization?.IsPriceOptimized}");
-        end = DateTimeOffset.UtcNow;
-        Console.WriteLine($"Req3 Time: {end.ToUnixTimeMilliseconds() - start.ToUnixTimeMilliseconds()}ms");
 
-        start = DateTimeOffset.UtcNow;
-        var requestArray1 = new List<GetPriceRequest>
+        Console.WriteLine("Simplified price optimization handler");
+        var options = new SpressoHandlerOptions
         {
-            new("spressoapidelay-500", "ZCA4", 18.95m, null, false, "foobarbaz useragent"),
-            new("spressoapidelay-500", "AAGE25", 18.95m, null, false, "foobarbaz useragent"),
-            new("spressoapidelay-500", "blahblah", 18.95m, null, false, "foobarbaz useragent")
+            SpressoBaseUrl = Environment.GetEnvironmentVariable("SPRESSO_BASE_AUTH_URL")
         };
-        var batchResponse1 = await spressoHandler.GetPricesAsync(new GetPricesRequest(requestArray1, "foobarbaz useragent"));
-        foreach (var response in batchResponse1.PriceOptimizations)
+        var simplifiedSpressoHandler = new SpressoHandler("test123", "secret", options);
+        var itemRequest = new GetPriceRequest("Device-789", "AAHV16", 18.95m);
+        var simplifiedSingleResponse = await simplifiedSpressoHandler.GetPriceAsync(itemRequest);
+        if (simplifiedSingleResponse.IsSuccess)
         {
-            Console.WriteLine($"ItemId: {response.ItemId}, Price: {response.Price}, Optimized: {response.IsPriceOptimized}");
+            PrintPriceOptimization(simplifiedSingleResponse.PriceOptimization!);
         }
-        end = DateTimeOffset.UtcNow;
-        Console.WriteLine($"BatchReq Time: {end.ToUnixTimeMilliseconds() - start.ToUnixTimeMilliseconds()}ms");
 
-        start = DateTimeOffset.UtcNow;
-        var requestArray2 = new List<GetPriceRequest>
-        {
-            new("spressoapidelay-500", "foosku", 18.95m, null, false, "foobarbaz useragent"),
-            new("spressoapidelay-500", "barsku", 12.34m, null, false, "foobarbaz useragent"),
-            new("spressoapidelay-500", "bazsku", 56.78m, null, false, "foobarbaz useragent")
-        };
-        var batchResponse2 = await spressoHandler.GetPricesAsync(new GetPricesRequest(requestArray2, "foobarbaz useragent"));
-        foreach (var response in batchResponse2.PriceOptimizations)
-        {
-            Console.WriteLine($"ItemId: {response.ItemId}, Price: {response.Price}, Optimized: {response.IsPriceOptimized}");
+        var updateRequest = new CatalogUpdatesRequest(new []
+            { new CatalogUpdateRequest("foobar-1", "hello world test sku", 43.12m, 1.23m) }
+        );
+        var catalogUpdateResponse = await simplifiedSpressoHandler.UpdateCatalogAsync(updateRequest);
+        if (catalogUpdateResponse.IsSuccess) {
+            Console.WriteLine("Update completed successfully");
+        } else {
+            Console.WriteLine($"Error: {catalogUpdateResponse.Error}");
         }
-        end = DateTimeOffset.UtcNow;
-        Console.WriteLine($"BatchReq Time: {end.ToUnixTimeMilliseconds() - start.ToUnixTimeMilliseconds()}ms");
 
-        Console.WriteLine("Done");
+        var verificationRequest = new PriceVerificationsRequest(new []
+            { new PriceVerificationRequest("EZZL2", 4.39m, "Device-789") }
+        );
+        var verificationResponse = await simplifiedSpressoHandler.VerifyPricesAsync(verificationRequest);
+        if (verificationResponse.IsSuccess) {
+            foreach (var response in verificationResponse.PriceVerifications)
+                PrintPriceVerification(response);
+        } else {
+            Console.WriteLine($"Error: {catalogUpdateResponse.Error}");
+        }
+
+        Console.WriteLine("Requests execution finished. Press any key to exit.");
+        
+        Console.ReadKey();
     }
 
     private static IHost SetupDependencyInjection(string[] strings)
@@ -124,9 +125,3 @@ public class Program
         Console.WriteLine($"ItemId: {priceVerification.ItemId}, Price: {priceVerification.Price}, Status: {priceVerification.PriceStatus}");
     }
 }
-
-
-
-
-
-
