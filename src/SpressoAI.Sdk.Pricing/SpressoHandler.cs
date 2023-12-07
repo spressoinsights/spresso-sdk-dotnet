@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Polly;
@@ -31,6 +32,7 @@ namespace SpressoAI.Sdk.Pricing
         private const string PriceOptimizationsEndpoint = "/pim/v1/prices";
         private const string CatalogUpdatesEndpoint = "/pim/v1/variants";
         private const string PriceVerificationEndpoint = "/pim/v1/prices/verify";
+        private const string OptimizedSkusKey = "Spresso.Core.OptimizedSkusKey";
         private const int MaxRequestSize = 500;
         private readonly string _additionalParameters;
         private readonly IAuthTokenHandler _authTokenHandler;
@@ -39,6 +41,7 @@ namespace SpressoAI.Sdk.Pricing
         private readonly IAsyncPolicy<GetPricesResponse> _getPriceOptimizationBatchPolicy;
         private readonly SpressoHttpClientFactory _httpClientFactory;
         private readonly TimeSpan _httpTimeout;
+        private readonly IDistributedCache _cache;
 
         private readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings
         {
@@ -67,6 +70,10 @@ namespace SpressoAI.Sdk.Pricing
             _additionalParameters = options.AdditionalParameters;
             _getPriceOptimizationPolicy = CreateSpressoResiliencyPolicy(options);
             _getPriceOptimizationBatchPolicy = CreateSpressoBatchResiliencyPolicy(options);
+            _cache = new MemoryDistributedCache(new OptionsWrapper<MemoryDistributedCacheOptions>(new MemoryDistributedCacheOptions()));
+
+            // Premptively cache optimized skus, don't await
+            _ = CacheOptimizedSkusAsync();
         }
 
         /// <summary>
@@ -91,16 +98,39 @@ namespace SpressoAI.Sdk.Pricing
             _additionalParameters = options.AdditionalParameters;
             _getPriceOptimizationPolicy = CreateSpressoResiliencyPolicy(options);
             _getPriceOptimizationBatchPolicy = CreateSpressoBatchResiliencyPolicy(options);
+            _cache = new MemoryDistributedCache(new OptionsWrapper<MemoryDistributedCacheOptions>(new MemoryDistributedCacheOptions()));
+
+            // Premptively cache optimized skus, don't await
+            _ = CacheOptimizedSkusAsync();
         }
 
         /// <inheritdoc cref="ISpressoHandler.GetPriceAsync" />
         public async Task<GetPriceResponse> GetPriceAsync(GetPriceRequest request,
             CancellationToken cancellationToken = default)
         {
+            return await GetPriceAsync(request, null, null, cancellationToken);
+        }
+
+        public async Task<GetPriceResponse> GetPriceAsync(
+            GetPriceRequest request,
+            string? originalIP,
+            Dictionary<string, string>? httpHeaders,
+            CancellationToken cancellationToken = default)
+        {
             const string logNamespace = "@@GetPriceAsync@@";
             
             var executionResult = await _getPriceOptimizationPolicy.ExecuteAsync(async () =>
             {
+                var requestArray = new List<GetPriceRequest>
+                {
+                    request
+                };
+
+                if (SkipInactiveSkus(requestArray))
+                {
+                    return new GetPriceResponse(CreateDefaultPriceOptimization(request));
+                }
+
                 if (!string.IsNullOrEmpty(request.UserAgent))
                 {
                     var userAgentOverridesResponse =
@@ -144,7 +174,7 @@ namespace SpressoAI.Sdk.Pricing
                 {
                     var priceOptimization = CreatePriceOptimization(json);
                     return new GetPriceResponse(priceOptimization);
-                }, e => new GetPriceResponse(e), cancellationToken);
+                }, e => new GetPriceResponse(e), cancellationToken, originalIP, httpHeaders);
             });
 
             if (executionResult.IsSuccess)
@@ -168,8 +198,16 @@ namespace SpressoAI.Sdk.Pricing
             GetPricesRequest request,
             CancellationToken cancellationToken = default)
         {
-            const string logNamespace = "@@GetPricesAsync@@";
+            return await GetPricesAsync(request, null, null, cancellationToken);
+        }
 
+        public async Task<GetPricesResponse> GetPricesAsync(
+            GetPricesRequest request,
+            string? originalIP,
+            Dictionary<string, string>? httpHeaders,
+            CancellationToken cancellationToken = default)
+        {
+            const string logNamespace = "@@GetPricesAsync@@";
             var executionResult = await _getPriceOptimizationBatchPolicy.ExecuteAsync(async () =>
             {
                 var poRequests = request.Requests.ToList();
@@ -178,11 +216,15 @@ namespace SpressoAI.Sdk.Pricing
                 if (requestCount > MaxRequestSize)
                     throw new ArgumentException($"Max batch size is {MaxRequestSize} requests");
 
+                if (SkipInactiveSkus(poRequests))
+                {
+                    return new GetPricesResponse(request.Requests.Select(CreateDefaultPriceOptimization));
+                }
+
                 if (!string.IsNullOrEmpty(request.UserAgent))
                 {
                     var userAgentOverridesResponse =
                         await GetPriceOptimizationsUserAgentOverridesAsync(cancellationToken);
-                    
                     if (userAgentOverridesResponse.IsSuccess)
                     {
                         if (userAgentOverridesResponse.UserAgentRegexes.Any(regex => regex.IsMatch(request.UserAgent)))
@@ -223,7 +265,7 @@ namespace SpressoAI.Sdk.Pricing
                     var responses = CreatePriceOptimizationArray(responseJson);
 
                     return new GetPricesResponse(responses);
-                }, e => new GetPricesResponse(e), cancellationToken);
+                }, e => new GetPricesResponse(e), cancellationToken, originalIP, httpHeaders);
             });
 
             if (executionResult.IsSuccess)
@@ -238,10 +280,44 @@ namespace SpressoAI.Sdk.Pricing
                 request.Requests.Select(CreateDefaultPriceOptimization));
         }
 
+        private bool SkipInactiveSkus(List<GetPriceRequest> requests)
+        {
+            // Fetch optimized skus, don't await!
+            _ = CacheOptimizedSkusAsync();
+
+            var optimizedSkus = GetCachedOptimizedSkuList();
+            if (optimizedSkus == null)
+            {
+                return false;
+            }
+
+            /* We only skip if ALL skus are non optimized
+             * Why? The point of this is to minimize the API roundtrip.
+             * If even one sku IS optimized we won't be able to skip, so no point adding the extra complexity of partial skips
+             */
+            var someOptimized = requests.Any(request => optimizedSkus.Skus.Contains(request.ItemId));
+            if (optimizedSkus.SkipInactive && !someOptimized)
+            {
+                _logger.LogDebug("All SKUs are non-optimized, short-circuiting...");
+                return true;
+            }
+
+            _logger.LogDebug("Found optimized SKU, making API request...");
+            return false;
+        }
+
         public async Task<GetPriceOptimizationsUserAgentOverridesResponse> GetPriceOptimizationsUserAgentOverridesAsync(
             CancellationToken cancellationToken = default)
         {
             const string logNamespace = "@@SpressoHandler.GetPriceOptimizationsUserAgentOverridesAsync@@";
+            const string cacheKey = "Spresso.Core.UserAgentKey";
+
+            var cachedUserAgents = _cache.GetString(cacheKey);
+            if (cachedUserAgents != null)
+            {
+                _logger.LogDebug("{0} cache hit", cacheKey);
+                return ProcessUserAgentResponse(cachedUserAgents);
+            }
             
             var tokenResponse = await GetTokenAsync(logNamespace,
                 e => new GetPriceOptimizationsUserAgentOverridesResponse(e), cancellationToken);
@@ -253,15 +329,58 @@ namespace SpressoAI.Sdk.Pricing
             var query = "/pim/v1/priceOptimizationOrgConfig";
             return await ExecuteGetApiRequestAsync(httpClient, query, jsonResponse =>
             {
-                var apiResponse = CreateUserAgentRegexes(jsonResponse).Data.UserAgentBlacklist
-                    .Where(r => r.Status == UserAgentStatus.Active);
-                var compiledRegexes = apiResponse
-                    .Select(r => new Regex(r.Regexp, RegexOptions.Singleline | RegexOptions.Compiled)).ToArray();
-
-                var getPriceOptimizationsUserAgentOverridesResponse =
-                    new GetPriceOptimizationsUserAgentOverridesResponse(compiledRegexes);
-                return Task.FromResult(getPriceOptimizationsUserAgentOverridesResponse);
+                _logger.LogDebug("{0} cache miss", cacheKey);
+                _cache.SetString(cacheKey, jsonResponse, 
+                    new DistributedCacheEntryOptions
+                    {
+                        AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
+                    });
+                return Task.FromResult(ProcessUserAgentResponse(jsonResponse));
             }, e => new GetPriceOptimizationsUserAgentOverridesResponse(e), cancellationToken);
+        }
+
+        private async Task<GetOptimizedSkusResponse> CacheOptimizedSkusAsync(
+            CancellationToken cancellationToken = default)
+        {
+            const string logNamespace = "@@SpressoHandler.GetOptimizedSkusAsync@@";
+
+            var cachedSkus = GetCachedOptimizedSkuList();
+            if (cachedSkus != null)
+            {
+                _logger.LogDebug("{0} cache hit", OptimizedSkusKey);
+                return cachedSkus;
+            }
+
+            var tokenResponse = await GetTokenAsync(logNamespace,
+                e => new GetOptimizedSkusResponse(0, new HashSet<string>(), false), cancellationToken);
+            if (!tokenResponse.IsSuccess) return tokenResponse.ErrorResponse;
+
+            var token = tokenResponse.Token!;
+            var httpClient = GetHttpClient(token);
+
+            var query = "/pim/v1/variants/optimizedSKUs";
+            return await ExecuteGetApiRequestAsync(httpClient, query, jsonResponse =>
+            {
+                var result = ProcessOptimizedSkuResponse(jsonResponse);
+                _logger.LogDebug("{0} cache miss", OptimizedSkusKey);
+                _cache.SetString(OptimizedSkusKey, jsonResponse, 
+                    new DistributedCacheEntryOptions
+                    {
+                        AbsoluteExpiration = DateTimeOffset.FromUnixTimeSeconds(result.ExpiresAt)
+                    });
+                return Task.FromResult(result);
+            }, e => new GetOptimizedSkusResponse(0, new HashSet<string>(), false), cancellationToken);
+        }
+
+        private GetOptimizedSkusResponse? GetCachedOptimizedSkuList() {
+            var cachedSkus = _cache.GetString(OptimizedSkusKey);
+            if (cachedSkus != null)
+            {
+                _logger.LogDebug("{0} cache hit", OptimizedSkusKey);
+                return ProcessOptimizedSkuResponse(cachedSkus);
+            }
+
+            return null;
         }
 
         /// <inheritdoc cref="ISpressoHandler.UpdateCatalogAsync" />
@@ -395,9 +514,28 @@ namespace SpressoAI.Sdk.Pricing
             return JsonConvert.DeserializeObject<GetUserAgentRegexesApiResponse>(jsonResponse)!;
         }
 
+        private GetPriceOptimizationsUserAgentOverridesResponse ProcessUserAgentResponse(string json)
+        {
+            var parsedResponse = CreateUserAgentRegexes(json).Data.UserAgentBlacklist.Where(r => r.Status == UserAgentStatus.Active);
+            var compiledRegexes = parsedResponse
+                .Select(r => new Regex(r.Regexp, RegexOptions.Singleline | RegexOptions.Compiled)).ToArray();
+
+            var getPriceOptimizationsUserAgentOverridesResponse =
+                new GetPriceOptimizationsUserAgentOverridesResponse(compiledRegexes);
+            
+            return getPriceOptimizationsUserAgentOverridesResponse;
+        }
+
+        private GetOptimizedSkusResponse ProcessOptimizedSkuResponse(string jsonResponse)
+        {
+            return JsonConvert.DeserializeObject<GetOptimizedSkusResponse>(jsonResponse)!;
+        }
+
         private Task<T> ExecutePostApiRequestAsync<T>(HttpClient httpClient, string requestUri, string requestJson,
             Func<string, Task<T>> onSuccessFunc,
-            Func<SpressoError, T> onFailureFunc, CancellationToken cancellationToken)
+            Func<SpressoError, T> onFailureFunc, CancellationToken cancellationToken,
+            string? originalIP = null, Dictionary<string, string>? httpHeaders = null
+            )
         {
             return httpClient.ExecutePostApiRequestAsync(requestUri, requestJson,
                 onSuccessFunc: (apiResponseJson, httpStatus) => onSuccessFunc(apiResponseJson),
@@ -405,12 +543,14 @@ namespace SpressoAI.Sdk.Pricing
                 onBadRequestFailure: () => onFailureFunc(SpressoError.BadRequest),
                 onTimeoutFailure: exception => onFailureFunc(SpressoError.Timeout),
                 onUnknownFailure: (exception, code) => onFailureFunc(SpressoError.Unknown),
-                cancellationToken);
+                cancellationToken, originalIP, httpHeaders);
         }
 
         private Task<T> ExecuteGetApiRequestAsync<T>(HttpClient httpClient, string requestUri,
             Func<string, Task<T>> onSuccessFunc,
-            Func<SpressoError, T> onFailureFunc, CancellationToken cancellationToken)
+            Func<SpressoError, T> onFailureFunc, CancellationToken cancellationToken,
+            string? originalIP = null, Dictionary<string, string>? httpHeaders = null
+            )
         {
             return httpClient.ExecuteGetApiRequestAsync(requestUri,
                 onSuccessFunc: (apiResponseJson, httpStatus) => onSuccessFunc(apiResponseJson),
@@ -418,7 +558,7 @@ namespace SpressoAI.Sdk.Pricing
                 onBadRequestFailure: () => onFailureFunc(SpressoError.BadRequest),
                 onTimeoutFailure: exception => onFailureFunc(SpressoError.Timeout),
                 onUnknownFailure: (exception, code) => onFailureFunc(SpressoError.Unknown),
-                cancellationToken);
+                cancellationToken, originalIP, httpHeaders);
         }
 
         private Task<T> ExecutePutApiRequestAsync<T>(HttpClient httpClient, string requestUri, string requestJson,

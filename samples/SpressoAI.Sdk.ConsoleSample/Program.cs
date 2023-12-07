@@ -125,9 +125,3 @@ public class Program
         Console.WriteLine($"ItemId: {priceVerification.ItemId}, Price: {priceVerification.Price}, Status: {priceVerification.PriceStatus}");
     }
 }
-
-
-
-
-
-
