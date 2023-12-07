@@ -105,10 +105,9 @@ namespace SpressoAI.Sdk.Pricing
         }
 
         /// <inheritdoc cref="ISpressoHandler.GetPriceAsync" />
-        public async Task<GetPriceResponse> GetPriceAsync(
-            GetPriceRequest request,
-            CancellationToken cancellationToken = default
-        ) {
+        public async Task<GetPriceResponse> GetPriceAsync(GetPriceRequest request,
+            CancellationToken cancellationToken = default)
+        {
             return await GetPriceAsync(request, null, null, cancellationToken);
         }
 
@@ -116,8 +115,8 @@ namespace SpressoAI.Sdk.Pricing
             GetPriceRequest request,
             string? originalIP,
             Dictionary<string, string>? httpHeaders,
-            CancellationToken cancellationToken = default
-        ) {
+            CancellationToken cancellationToken = default)
+        {
             const string logNamespace = "@@GetPriceAsync@@";
             
             var executionResult = await _getPriceOptimizationPolicy.ExecuteAsync(async () =>
@@ -175,7 +174,7 @@ namespace SpressoAI.Sdk.Pricing
                 {
                     var priceOptimization = CreatePriceOptimization(json);
                     return new GetPriceResponse(priceOptimization);
-                }, e => new GetPriceResponse(e), cancellationToken);
+                }, e => new GetPriceResponse(e), cancellationToken, originalIP, httpHeaders);
             });
 
             if (executionResult.IsSuccess)
@@ -197,8 +196,8 @@ namespace SpressoAI.Sdk.Pricing
         /// <inheritdoc cref="ISpressoHandler.GetPricesAsync" />
         public async Task<GetPricesResponse> GetPricesAsync(
             GetPricesRequest request,
-            CancellationToken cancellationToken = default
-        ) {
+            CancellationToken cancellationToken = default)
+        {
             return await GetPricesAsync(request, null, null, cancellationToken);
         }
 
@@ -206,8 +205,8 @@ namespace SpressoAI.Sdk.Pricing
             GetPricesRequest request,
             string? originalIP,
             Dictionary<string, string>? httpHeaders,
-            CancellationToken cancellationToken = default
-        ) {
+            CancellationToken cancellationToken = default)
+        {
             const string logNamespace = "@@GetPricesAsync@@";
             var executionResult = await _getPriceOptimizationBatchPolicy.ExecuteAsync(async () =>
             {
@@ -266,7 +265,7 @@ namespace SpressoAI.Sdk.Pricing
                     var responses = CreatePriceOptimizationArray(responseJson);
 
                     return new GetPricesResponse(responses);
-                }, e => new GetPricesResponse(e), cancellationToken);
+                }, e => new GetPricesResponse(e), cancellationToken, originalIP, httpHeaders);
             });
 
             if (executionResult.IsSuccess)
