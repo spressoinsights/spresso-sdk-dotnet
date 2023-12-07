@@ -10,75 +10,29 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        
-        var host = SetupDependencyInjection(args);
-
-        var logger = host.Services.GetService<ILogger<Program>>();
-        logger.LogInformation("Starting Console Test");
-
-        var spressoHandler = host.Services.GetService<ISpressoHandler>();
-    
-        var singleRequest = new GetPriceRequest("Device-789", "ESPS2", 8.95m,
-            userAgent: "Mozilla/5.0 (X11; Linux x86_64; Storebot-Google/1.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36");
-        var secondRequest = new GetPriceRequest("Device-789", "EZZL2", 18.95m);
-
-        var singleResponse = await spressoHandler.GetPriceAsync(singleRequest);
-        if (singleResponse.IsSuccess)
+        Console.WriteLine("Hello, World!");
+        var spressoHandler = new SpressoHandler("JPgYKJF9JlXFPOrzbNox7WICpn4i7eWv", "SM4BfSMnP8FNgRRCtsSaWQsb0KpEXv4i65jRYxi2AOiVhpJpi7e0_qTFjtlSyB2U");
+        var itemRequest = new GetPriceRequest("Device-123", "AAGE25", 18.95m, null, false, "foobarbaz useragent");
+        var singleResponse = await spressoHandler.GetPriceAsync(itemRequest);
+        if (!singleResponse.IsSuccess)
         {
-            PrintPriceOptimization(singleResponse.PriceOptimization!);
+            Console.WriteLine($"Error: {singleResponse.Error}");
         }
+        Console.WriteLine($"ItemId: {singleResponse.PriceOptimization?.ItemId}, Price: {singleResponse.PriceOptimization?.Price}, Optimized: {singleResponse.PriceOptimization?.IsPriceOptimized}");
 
-        var batchRequest = new GetPricesRequest(new[] { singleRequest, secondRequest }, userAgent: "Gio's Computer");
-        var batchResponse = await spressoHandler.GetPricesAsync(batchRequest);
-   
-        if (batchResponse.IsSuccess)
+        var start = DateTimeOffset.UtcNow;
+        var itemRequest2 = new GetPriceRequest("spressoapidelay-500", "AAGE25", 18.95m, null, false, "foobarbaz useragent");
+        var singleResponse2 = await spressoHandler.GetPriceAsync(itemRequest2);
+        if (!singleResponse2.IsSuccess)
         {
-            foreach (var po in batchResponse.PriceOptimizations)
-                PrintPriceOptimization(po);
+            Console.WriteLine($"Error: {singleResponse2.Error}");
         }
-        else
-        {
-            foreach (var po in batchResponse.PriceOptimizations)
-                PrintPriceOptimization(po);
-        }
+        Console.WriteLine($"ItemId: {singleResponse2.PriceOptimization?.ItemId}, Price: {singleResponse2.PriceOptimization?.Price}, Optimized: {singleResponse2.PriceOptimization?.IsPriceOptimized}");
+        var end = DateTimeOffset.UtcNow;
+        Console.WriteLine($"Req2 Time: {end.ToUnixTimeMilliseconds() - start.ToUnixTimeMilliseconds()}ms");
 
-        Console.WriteLine("Simplified price optimization handler");
-        var options = new SpressoHandlerOptions
-        {
-            SpressoBaseUrl = Environment.GetEnvironmentVariable("SPRESSO_BASE_AUTH_URL")
-        };
-        var simplifiedSpressoHandler = new SpressoHandler("test123", "secret", options);
-        var itemRequest = new GetPriceRequest("Device-789", "AAHV16", 18.95m);
-        var simplifiedSingleResponse = await simplifiedSpressoHandler.GetPriceAsync(itemRequest);
-        if (simplifiedSingleResponse.IsSuccess)
-        {
-            PrintPriceOptimization(simplifiedSingleResponse.PriceOptimization!);
-        }
-
-        var updateRequest = new CatalogUpdatesRequest(new []
-            { new CatalogUpdateRequest("foobar-1", "hello world test sku", 43.12m, 1.23m) }
-        );
-        var catalogUpdateResponse = await simplifiedSpressoHandler.UpdateCatalogAsync(updateRequest);
-        if (catalogUpdateResponse.IsSuccess) {
-            Console.WriteLine("Update completed successfully");
-        } else {
-            Console.WriteLine($"Error: {catalogUpdateResponse.Error}");
-        }
-
-        var verificationRequest = new PriceVerificationsRequest(new []
-            { new PriceVerificationRequest("EZZL2", 4.39m, "Device-789") }
-        );
-        var verificationResponse = await simplifiedSpressoHandler.VerifyPricesAsync(verificationRequest);
-        if (verificationResponse.IsSuccess) {
-            foreach (var response in verificationResponse.PriceVerifications)
-                PrintPriceVerification(response);
-        } else {
-            Console.WriteLine($"Error: {catalogUpdateResponse.Error}");
-        }
-
-        Console.WriteLine("Requests execution finished. Press any key to exit.");
-        
-        Console.ReadKey();
+        Console.WriteLine("Done");
+        Thread.Sleep(2000);
     }
 
     private static IHost SetupDependencyInjection(string[] strings)
