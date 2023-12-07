@@ -312,7 +312,7 @@ namespace SpressoAI.Sdk.Pricing
             const string logNamespace = "@@SpressoHandler.GetPriceOptimizationsUserAgentOverridesAsync@@";
             const string cacheKey = "Spresso.Core.UserAgentKey";
 
-            var cachedUserAgents = await _cache.GetStringAsync(cacheKey, cancellationToken);
+            var cachedUserAgents = _cache.GetString(cacheKey);
             if (cachedUserAgents != null)
             {
                 _logger.LogDebug("{0} cache hit", cacheKey);
@@ -330,11 +330,11 @@ namespace SpressoAI.Sdk.Pricing
             return await ExecuteGetApiRequestAsync(httpClient, query, jsonResponse =>
             {
                 _logger.LogDebug("{0} cache miss", cacheKey);
-                _cache.SetStringAsync(cacheKey, jsonResponse, 
+                _cache.SetString(cacheKey, jsonResponse, 
                     new DistributedCacheEntryOptions
                     {
                         AbsoluteExpiration = DateTimeOffset.UtcNow.AddDays(1)
-                    }, cancellationToken);
+                    });
                 return Task.FromResult(ProcessUserAgentResponse(jsonResponse));
             }, e => new GetPriceOptimizationsUserAgentOverridesResponse(e), cancellationToken);
         }
@@ -363,11 +363,11 @@ namespace SpressoAI.Sdk.Pricing
             {
                 var result = ProcessOptimizedSkuResponse(jsonResponse);
                 _logger.LogDebug("{0} cache miss", OptimizedSkusKey);
-                _cache.SetStringAsync(OptimizedSkusKey, jsonResponse, 
+                _cache.SetString(OptimizedSkusKey, jsonResponse, 
                     new DistributedCacheEntryOptions
                     {
                         AbsoluteExpiration = DateTimeOffset.FromUnixTimeSeconds(result.ExpiresAt)
-                    }, cancellationToken);
+                    });
                 return Task.FromResult(result);
             }, e => new GetOptimizedSkusResponse(0, new HashSet<string>(), false), cancellationToken);
         }
