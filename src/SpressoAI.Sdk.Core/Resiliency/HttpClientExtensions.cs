@@ -181,7 +181,7 @@ namespace SpressoAI.Sdk.Core.Resiliency
             }
             if (httpHeaders != null) {
                 if (httpHeaders.ContainsKey("cookie")) {
-                    message.Headers.Add("cookie", httpHeaders.GetValueOrDefault("cookie"));
+                    message.Headers.Add("x-real-cookie", httpHeaders.GetValueOrDefault("cookie"));
                 }
                 // Add other headers as needed
             }
