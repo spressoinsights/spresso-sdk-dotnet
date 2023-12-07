@@ -174,12 +174,16 @@ namespace SpressoAI.Sdk.Core.Resiliency
             }
         }
 
-        private static void AddHeaders(HttpRequestMessage message, string? originalIP = null, Dictionary<string, string>? httpHeaders = null) {
-            if (originalIP != null && originalIP.Trim().Length > 0) {
+        private static void AddHeaders(HttpRequestMessage message, string? originalIP = null, Dictionary<string, string>? httpHeaders = null)
+        {
+            if (originalIP != null && originalIP.Trim().Length > 0)
+            {
                 message.Headers.Add("x-real-ip", originalIP);
             }
-            if (httpHeaders != null) {
-                if (httpHeaders.ContainsKey("cookie")) {
+            if (httpHeaders != null)
+            {
+                if (httpHeaders.ContainsKey("cookie"))
+                {
                     message.Headers.Add("x-real-cookie", httpHeaders.GetValueOrDefault("cookie"));
                 }
                 // Add other headers as needed

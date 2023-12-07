@@ -297,7 +297,8 @@ namespace SpressoAI.Sdk.Pricing
              * If even one sku IS optimized we won't be able to skip, so no point adding the extra complexity of partial skips
              */
             var someOptimized = requests.Any(request => optimizedSkus.Skus.Contains(request.ItemId));
-            if (optimizedSkus.SkipInactive && !someOptimized) {
+            if (optimizedSkus.SkipInactive && !someOptimized)
+            {
                 _logger.LogDebug("All SKUs are non-optimized, short-circuiting...");
                 return true;
             }
@@ -313,7 +314,8 @@ namespace SpressoAI.Sdk.Pricing
             const string cacheKey = "Spresso.Core.UserAgentKey";
 
             var cachedUserAgents = await _cache.GetStringAsync(cacheKey, cancellationToken);
-            if (cachedUserAgents != null) {
+            if (cachedUserAgents != null)
+            {
                 _logger.LogDebug("{0} cache hit", cacheKey);
                 return ProcessUserAgentResponse(cachedUserAgents);
             }
@@ -344,7 +346,8 @@ namespace SpressoAI.Sdk.Pricing
             const string logNamespace = "@@SpressoHandler.GetOptimizedSkusAsync@@";
 
             var cachedSkus = GetCachedOptimizedSkuList();
-            if (cachedSkus != null) {
+            if (cachedSkus != null)
+            {
                 _logger.LogDebug("{0} cache hit", OptimizedSkusKey);
                 return cachedSkus;
             }
@@ -372,7 +375,8 @@ namespace SpressoAI.Sdk.Pricing
 
         private GetOptimizedSkusResponse? GetCachedOptimizedSkuList() {
             var cachedSkus = _cache.GetString(OptimizedSkusKey);
-            if (cachedSkus != null) {
+            if (cachedSkus != null)
+            {
                 _logger.LogDebug("{0} cache hit", OptimizedSkusKey);
                 return ProcessOptimizedSkuResponse(cachedSkus);
             }
