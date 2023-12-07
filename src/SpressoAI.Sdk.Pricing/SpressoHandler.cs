@@ -73,6 +73,9 @@ namespace SpressoAI.Sdk.Pricing
             _getPriceOptimizationPolicy = CreateSpressoResiliencyPolicy(options);
             _getPriceOptimizationBatchPolicy = CreateSpressoBatchResiliencyPolicy(options);
             _cache = new MemoryDistributedCache(new OptionsWrapper<MemoryDistributedCacheOptions>(new MemoryDistributedCacheOptions()));
+
+            // Premptively cache optimized skus, don't await
+            _ = CacheOptimizedSkusAsync();
         }
 
         /// <summary>
@@ -98,6 +101,9 @@ namespace SpressoAI.Sdk.Pricing
             _getPriceOptimizationPolicy = CreateSpressoResiliencyPolicy(options);
             _getPriceOptimizationBatchPolicy = CreateSpressoBatchResiliencyPolicy(options);
             _cache = new MemoryDistributedCache(new OptionsWrapper<MemoryDistributedCacheOptions>(new MemoryDistributedCacheOptions()));
+
+            // Premptively cache optimized skus, don't await
+            _ = CacheOptimizedSkusAsync();
         }
 
         /// <inheritdoc cref="ISpressoHandler.GetPriceAsync" />
@@ -108,7 +114,15 @@ namespace SpressoAI.Sdk.Pricing
             
             var executionResult = await _getPriceOptimizationPolicy.ExecuteAsync(async () =>
             {
-                // Check if sku is in the set
+                var requestArray = new List<GetPriceRequest>
+                {
+                    request
+                };
+
+                if (SkipInactiveSkus(requestArray))
+                {
+                    return new GetPriceResponse(CreateDefaultPriceOptimization(request));
+                }
 
                 if (!string.IsNullOrEmpty(request.UserAgent))
                 {
@@ -187,6 +201,11 @@ namespace SpressoAI.Sdk.Pricing
                 if (requestCount > MaxRequestSize)
                     throw new ArgumentException($"Max batch size is {MaxRequestSize} requests");
 
+                if (SkipInactiveSkus(poRequests))
+                {
+                    return new GetPricesResponse(request.Requests.Select(CreateDefaultPriceOptimization));
+                }
+
                 if (!string.IsNullOrEmpty(request.UserAgent))
                 {
                     var userAgentOverridesResponse =
@@ -246,6 +265,32 @@ namespace SpressoAI.Sdk.Pricing
                 request.Requests.Select(CreateDefaultPriceOptimization));
         }
 
+        private bool SkipInactiveSkus(List<GetPriceRequest> requests)
+        {
+            // Fetch optimized skus, don't await!
+            _ = CacheOptimizedSkusAsync();
+
+            var optimizedSkus = GetCachedOptimizedSkuList();
+            if (optimizedSkus == null)
+            {
+                return false;
+            }
+
+            /* We only skip if ALL skus are non optimized
+             * Why? The point of this is to minimize the API roundtrip.
+             * If even one sku IS optimized we won't be able to skip, so no point adding the extra complexity of partial skips
+             */
+            var someOptimized = requests.Any(request => optimizedSkus.Skus.Contains(request.ItemId));
+            if (optimizedSkus.SkipInactive && !someOptimized) {
+                Console.WriteLine("All SKUs are non-optimized, short-circuiting...");
+                _logger.LogDebug("All SKUs are non-optimized, short-circuiting...");
+                return true;
+            }
+
+            Console.WriteLine("Found optimized SKU, making API request...");
+            _logger.LogDebug("Found optimized SKU, making API request...");
+            return false;
+        }
 
         public async Task<GetPriceOptimizationsUserAgentOverridesResponse> GetPriceOptimizationsUserAgentOverridesAsync(
             CancellationToken cancellationToken = default)
@@ -279,18 +324,19 @@ namespace SpressoAI.Sdk.Pricing
             }, e => new GetPriceOptimizationsUserAgentOverridesResponse(e), cancellationToken);
         }
 
-        public async Task<GetOptimizedSkusResponse> GetOptimizedSkusAsync(
+        private async Task<GetOptimizedSkusResponse> CacheOptimizedSkusAsync(
             CancellationToken cancellationToken = default)
         {
             const string logNamespace = "@@SpressoHandler.GetOptimizedSkusAsync@@";
 
-            var cachedSkus = await GetCachedOptimizedSkuList(cancellationToken);
+            var cachedSkus = GetCachedOptimizedSkuList();
             if (cachedSkus != null) {
+                _logger.LogDebug("{0} cache hit", OptimizedSkusKey);
                 return cachedSkus;
             }
 
             var tokenResponse = await GetTokenAsync(logNamespace,
-                e => new GetOptimizedSkusResponse(), cancellationToken);
+                e => new GetOptimizedSkusResponse(0, new HashSet<string>(), false), cancellationToken);
             if (!tokenResponse.IsSuccess) return tokenResponse.ErrorResponse;
 
             var token = tokenResponse.Token!;
@@ -299,22 +345,22 @@ namespace SpressoAI.Sdk.Pricing
             var query = "/pim/v1/variants/optimizedSKUs";
             return await ExecuteGetApiRequestAsync(httpClient, query, jsonResponse =>
             {
-                Console.WriteLine("Fetched");
+                Console.WriteLine("Fetching Opt Skus");
                 var result = ProcessOptimizedSkuResponse(jsonResponse);
                 _logger.LogDebug("{0} cache miss", OptimizedSkusKey);
+                Console.WriteLine($"Exp Time: {DateTimeOffset.FromUnixTimeSeconds(result.ExpiresAt)}");
                 _cache.SetStringAsync(OptimizedSkusKey, jsonResponse, 
                     new DistributedCacheEntryOptions
                     {
-                        AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(5) // fix
+                        AbsoluteExpiration = DateTimeOffset.FromUnixTimeSeconds(result.ExpiresAt)
                     }, cancellationToken);
                 return Task.FromResult(result);
-            }, e => new GetOptimizedSkusResponse(), cancellationToken);
+            }, e => new GetOptimizedSkusResponse(0, new HashSet<string>(), false), cancellationToken);
         }
 
-        private async Task<GetOptimizedSkusResponse?> GetCachedOptimizedSkuList(CancellationToken cancellationToken) {
-            var cachedSkus = await _cache.GetStringAsync(OptimizedSkusKey, cancellationToken);
+        private GetOptimizedSkusResponse? GetCachedOptimizedSkuList() {
+            var cachedSkus = _cache.GetString(OptimizedSkusKey);
             if (cachedSkus != null) {
-                Console.WriteLine("Cached");
                 _logger.LogDebug("{0} cache hit", OptimizedSkusKey);
                 return ProcessOptimizedSkuResponse(cachedSkus);
             }
