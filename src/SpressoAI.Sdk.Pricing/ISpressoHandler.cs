@@ -23,6 +23,12 @@ namespace SpressoAI.Sdk.Pricing
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         Task<GetPriceResponse> GetPriceAsync(GetPriceRequest request, CancellationToken cancellationToken = default);
+        Task<GetPriceResponse> GetPriceAsync(
+            GetPriceRequest request,
+            string? originalIP,
+            Dictionary<string, string>? httpHeaders,
+            CancellationToken cancellationToken = default
+        );
 
         /// <summary>
         ///     Gets multiple price optimizations
@@ -32,6 +38,12 @@ namespace SpressoAI.Sdk.Pricing
         /// <returns></returns>
         Task<GetPricesResponse> GetPricesAsync(GetPricesRequest request,
             CancellationToken cancellationToken = default);
+        Task<GetPricesResponse> GetPricesAsync(
+            GetPricesRequest request,
+            string? originalIP,
+            Dictionary<string, string>? httpHeaders,
+            CancellationToken cancellationToken = default
+        );
 
         Task<GetPriceOptimizationsUserAgentOverridesResponse> GetPriceOptimizationsUserAgentOverridesAsync(CancellationToken cancellationToken = default);
 
