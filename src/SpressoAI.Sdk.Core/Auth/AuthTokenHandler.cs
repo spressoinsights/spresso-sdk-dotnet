@@ -26,7 +26,7 @@ namespace SpressoAI.Sdk.Core.Auth
         private readonly string _tokenRequest;
         private readonly IAsyncPolicy<AuthTokenResponse> _tokenResiliencyPolicy;
         private readonly TimeSpan _tokenExpirationLeeway =
-                new TimeSpan(0, 5, 0);
+                new TimeSpan(0, 30, 0);
 
 
         /// <summary>

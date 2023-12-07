@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System;
+using System.Net.Http.Headers;
 
 namespace SpressoAI.Sdk.Core.Resiliency
 {

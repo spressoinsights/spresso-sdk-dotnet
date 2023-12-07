@@ -71,6 +71,28 @@ namespace SpressoAI.Sdk.Pricing
         }
     }
 
+    public sealed class GetOptimizedSkusResponse
+    {
+        public HashSet<string> Skus { get; }
+
+        public bool SkipInactive { get; }
+
+        public long ExpiresAt { get; }
+
+        public GetOptimizedSkusResponse()
+        {
+            Skus = new HashSet<string>();
+            SkipInactive = false;
+            ExpiresAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - 1; // set expiration to the past
+        }
+
+        public GetOptimizedSkusResponse(long expiresAt, HashSet<string> skus, bool skipInactive)
+        {
+            Skus = skus;
+            ExpiresAt = expiresAt;
+            SkipInactive = skipInactive;
+        }
+    }
 
     public interface IPriceOptimizationResult
     {
